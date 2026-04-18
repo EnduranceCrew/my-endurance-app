@@ -47,22 +47,22 @@ endurance/
 
 ```
 ┌─────────────────────────────────────────────┐
-│              INFRAESTRUTURA                  │
+│              INFRAESTRUTURA                 │
 │  ┌─────────────┐       ┌──────────────────┐ │
-│  │  HTTP/Gin   │       │    PostgreSQL     │ │
+│  │  HTTP/Gin   │       │    PostgreSQL    │ │
 │  │  (handlers) │       │   (GORM repos)   │ │
 │  └──────┬──────┘       └────────┬─────────┘ │
-│         │ primary port          │ secondary  │
+│         │ primary port          │ secondary │
 │  ┌──────▼──────────────────────▼─────────┐  │
-│  │            APLICAÇÃO                   │  │
-│  │   UseCase interfaces + implementações  │  │
+│  │            APLICAÇÃO                  │  │
+│  │   UseCase interfaces + implementações │  │
 │  └──────────────────┬────────────────────┘  │
-│                     │ domain ports           │
+│                     │ domain ports          │
 │  ┌──────────────────▼────────────────────┐  │
-│  │              DOMÍNIO                   │  │
-│  │  Entidades puras · Interfaces (ports)  │  │
-│  │  Sem dependência de framework          │  │
-│  └────────────────────────────────────────┘  │
+│  │              DOMÍNIO                  │  │
+│  │  Entidades puras · Interfaces (ports) │  │
+│  │  Sem dependência de framework         │  │
+│  └───────────────────────────────────────┘  │
 └─────────────────────────────────────────────┘
 ```
 

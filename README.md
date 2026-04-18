@@ -1,4 +1,4 @@
-# 🖥️ Endurance — Monitoramento de Laboratórios de Informática
+# Endurance — Monitoramento de Laboratórios de Informática
 
 > Sistema full-stack para monitoramento de laboratórios públicos de informática.  
 > Dashboard com temas **dark** e **light**, autenticação JWT, roles de admin/usuário, validação de CPF e e-mail, notificações pop-up e arquitetura hexagonal limpa.

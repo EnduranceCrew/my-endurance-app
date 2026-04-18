@@ -419,5 +419,3 @@ A preferência é salva no `localStorage` e respeita `prefers-color-scheme` do s
 - Respostas de erro não expõem detalhes internos em produção (`GIN_MODE=release`)
 
 ---
-
-*Endurance — Monitoramento de Laboratórios de Informática Públicos*

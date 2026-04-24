@@ -23,6 +23,8 @@ export interface Lab {
   status: LabStatus
   description: string
   responsible_id?: string
+  computer_count: number
+  online_count: number
   created_at: string
   updated_at: string
 }

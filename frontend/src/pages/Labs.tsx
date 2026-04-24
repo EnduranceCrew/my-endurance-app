@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react'
 import { Plus, Search, Loader2 } from 'lucide-react'
 import { labService } from '@/services/endurance'
-import type { Lab } from '@/types'
+import type { Lab, LabStatus } from '@/types'
 import LabCard from '@/components/LabCard'
 import { useAuth } from '@/contexts/AuthContext'
 import toast from 'react-hot-toast'
+
+const emptyForm = { name: '', location: '', capacity: 30, description: '', status: 'active' as LabStatus }
 
 export default function Labs() {
   const { isAdmin } = useAuth()
   const [labs, setLabs] = useState<Lab[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [showModal, setShowModal] = useState(false)
 
-  // Formulário de criação
-  const [form, setForm] = useState({ name: '', location: '', capacity: 30, description: '' })
-  const [creating, setCreating] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [editingLab, setEditingLab] = useState<Lab | null>(null)
+  const [form, setForm] = useState(emptyForm)
+  const [saving, setSaving] = useState(false)
 
   const fetchLabs = () => {
     setLoading(true)
@@ -31,17 +33,42 @@ export default function Labs() {
     l.location.toLowerCase().includes(search.toLowerCase())
   )
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const openCreate = () => {
+    setEditingLab(null)
+    setForm(emptyForm)
+    setShowModal(true)
+  }
+
+  const openEdit = (lab: Lab) => {
+    setEditingLab(lab)
+    setForm({ name: lab.name, location: lab.location, capacity: lab.capacity, description: lab.description, status: lab.status })
+    setShowModal(true)
+  }
+
+  const handleDelete = async (lab: Lab) => {
+    if (!confirm(`Deseja excluir "${lab.name}"? Esta ação é irreversível.`)) return
+    try {
+      await labService.delete(lab.id)
+      toast.success('Laboratório excluído')
+      fetchLabs()
+    } catch { /* handled by interceptor */ }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name || !form.location) { toast.error('Preencha nome e localização'); return }
-    setCreating(true)
+    setSaving(true)
     try {
-      await labService.create(form)
-      toast.success('Laboratório criado!')
+      if (editingLab) {
+        await labService.update(editingLab.id, form)
+        toast.success('Laboratório atualizado!')
+      } else {
+        await labService.create(form)
+        toast.success('Laboratório criado!')
+      }
       setShowModal(false)
-      setForm({ name: '', location: '', capacity: 30, description: '' })
       fetchLabs()
-    } finally { setCreating(false) }
+    } finally { setSaving(false) }
   }
 
   return (
@@ -52,13 +79,12 @@ export default function Labs() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{labs.length} laboratório(s) cadastrado(s)</p>
         </div>
         {isAdmin && (
-          <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
+          <button onClick={openCreate} className="btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" /> Novo Lab
           </button>
         )}
       </div>
 
-      {/* Busca */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
@@ -78,16 +104,24 @@ export default function Labs() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((lab) => <LabCard key={lab.id} lab={lab} />)}
+          {filtered.map((lab) => (
+            <LabCard
+              key={lab.id}
+              lab={lab}
+              onEdit={isAdmin ? openEdit : undefined}
+              onDelete={isAdmin ? handleDelete : undefined}
+            />
+          ))}
         </div>
       )}
 
-      {/* Modal criar lab */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="card w-full max-w-md animate-slide-in">
-            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Novo laboratório</h2>
-            <form onSubmit={handleCreate} className="space-y-3">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+              {editingLab ? 'Editar laboratório' : 'Novo laboratório'}
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nome *</label>
                 <input className="input" placeholder="Lab. Informática A" value={form.name}
@@ -103,6 +137,17 @@ export default function Labs() {
                 <input type="number" className="input" min={1} max={200} value={form.capacity}
                   onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} />
               </div>
+              {editingLab && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
+                  <select className="input" value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value as LabStatus })}>
+                    <option value="active">Ativo</option>
+                    <option value="inactive">Inativo</option>
+                    <option value="maintenance">Manutenção</option>
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Descrição</label>
                 <textarea className="input resize-none" rows={2} placeholder="Descrição opcional..."
@@ -111,9 +156,9 @@ export default function Labs() {
               </div>
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-ghost flex-1">Cancelar</button>
-                <button type="submit" disabled={creating} className="btn-primary flex-1 flex items-center justify-center gap-2">
-                  {creating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  Criar
+                <button type="submit" disabled={saving} className="btn-primary flex-1 flex items-center justify-center gap-2">
+                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {editingLab ? 'Salvar' : 'Criar'}
                 </button>
               </div>
             </form>

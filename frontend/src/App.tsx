@@ -8,6 +8,7 @@ import Dashboard from '@/pages/Dashboard'
 import Labs from '@/pages/Labs'
 import LabDetail from '@/pages/LabDetail'
 import Alerts from '@/pages/Alerts'
+import Computers from '@/pages/Computers'
 import UsersPage from '@/pages/Users'
 import Profile from '@/pages/Profile'
 import NotFound from '@/pages/NotFound'
@@ -51,37 +52,5 @@ export default function App() {
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
-  )
-}
-
-// Página de computadores inline (simples)
-import { useEffect, useState } from 'react'
-import { Monitor, Loader2 } from 'lucide-react'
-import { computerService } from '@/services/endurance'
-import type { Computer } from '@/types'
-import ComputerGrid from '@/components/ComputerGrid'
-
-function Computers() {
-  const [computers, setComputers] = useState<Computer[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    computerService.getAll()
-      .then((d) => setComputers(d.computers))
-      .finally(() => setLoading(false))
-  }, [])
-
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-2">
-        <Monitor className="w-5 h-5 text-gray-500" />
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Computadores</h1>
-        <span className="text-sm text-gray-400 dark:text-gray-600">({computers.length})</span>
-      </div>
-      {loading
-        ? <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>
-        : <ComputerGrid computers={computers} />
-      }
-    </div>
   )
 }

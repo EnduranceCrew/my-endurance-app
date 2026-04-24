@@ -1,6 +1,6 @@
 import type { Computer } from '@/types'
 import clsx from 'clsx'
-import { Monitor, Wifi, WifiOff, AlertTriangle, Clock } from 'lucide-react'
+import { Monitor, Wifi, WifiOff, AlertTriangle, Clock, Trash2 } from 'lucide-react'
 
 const statusConfig = {
   online:  { label: 'Online',       icon: Wifi,          className: 'badge-online',  dot: 'bg-emerald-500' },
@@ -12,9 +12,10 @@ const statusConfig = {
 interface ComputerGridProps {
   computers: Computer[]
   compact?: boolean
+  onDelete?: (id: string) => void
 }
 
-export default function ComputerGrid({ computers, compact = false }: ComputerGridProps) {
+export default function ComputerGrid({ computers, compact = false, onDelete }: ComputerGridProps) {
   if (computers.length === 0) {
     return (
       <div className="text-center py-12 text-gray-400 dark:text-gray-600">
@@ -75,6 +76,15 @@ export default function ComputerGrid({ computers, compact = false }: ComputerGri
                 </p>
               )}
             </div>
+            {onDelete && (
+              <button
+                onClick={() => onDelete(c.id)}
+                title="Excluir"
+                className="flex-shrink-0 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 hover:text-red-500 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         )
       })}

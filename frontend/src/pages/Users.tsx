@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Users, Loader2, Trash2, ShieldCheck, ShieldX } from 'lucide-react'
+import { Users, Loader2, Trash2, ShieldCheck, ShieldX, Crown, UserIcon } from 'lucide-react'
 import { userService } from '@/services/endurance'
 import type { User } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
@@ -24,6 +24,16 @@ export default function UsersPage() {
     try {
       await userService.update(u.id, { name: u.name, active: !u.active })
       toast.success(`Usuário ${u.active ? 'desativado' : 'ativado'}`)
+      fetchUsers()
+    } catch { /* handled */ }
+  }
+
+  const handleToggleRole = async (u: User) => {
+    const newRole = u.role === 'admin' ? 'user' : 'admin'
+    if (!confirm(`Alterar perfil de "${u.name}" para ${newRole === 'admin' ? 'Administrador' : 'Usuário'}?`)) return
+    try {
+      await userService.changeRole(u.id, newRole)
+      toast.success(`Perfil alterado para ${newRole === 'admin' ? 'Administrador' : 'Usuário'}`)
       fetchUsers()
     } catch { /* handled */ }
   }
@@ -83,6 +93,13 @@ export default function UsersPage() {
                     <div className="flex items-center gap-1">
                       {u.id !== userId && (
                         <>
+                          <button
+                            onClick={() => handleToggleRole(u)}
+                            title={u.role === 'admin' ? 'Rebaixar para Usuário' : 'Promover a Admin'}
+                            className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-dark-muted text-gray-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
+                          >
+                            {u.role === 'admin' ? <UserIcon className="w-3.5 h-3.5" /> : <Crown className="w-3.5 h-3.5" />}
+                          </button>
                           <button
                             onClick={() => handleToggleActive(u)}
                             title={u.active ? 'Desativar' : 'Ativar'}

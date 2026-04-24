@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
 import { FlaskConical, Monitor, BellRing, Users, Zap, ShieldAlert, Wifi } from 'lucide-react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts'
 import StatsCard from '@/components/StatsCard'
+import PageState from '@/components/PageState'
 import { dashboardService } from '@/services/endurance'
-import type { DashboardStats } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAsync } from '@/hooks/useAsync'
 
 // Dados simulados para o gráfico de linha (monitoramento ao longo do tempo)
 const mockTimeline = [
@@ -26,20 +26,7 @@ const PIE_COLORS = ['#10b981', '#94a3b8', '#ef4444', '#f59e0b']
 
 export default function Dashboard() {
   const { name, isAdmin } = useAuth()
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    dashboardService.getStats()
-      .then(setStats)
-      .finally(() => setLoading(false))
-  }, [])
-
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
+  const { data: stats, loading, error } = useAsync(() => dashboardService.getStats())
 
   const pieData = stats ? [
     { name: 'Online',  value: stats.online_computers },
@@ -49,6 +36,7 @@ export default function Dashboard() {
   ].filter((d) => d.value > 0) : []
 
   return (
+    <PageState loading={loading} error={error}>
     <div className="space-y-6">
       {/* Header */}
       <div>
@@ -144,5 +132,6 @@ export default function Dashboard() {
         </div>
       ) : null}
     </div>
+    </PageState>
   )
 }

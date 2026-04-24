@@ -1,30 +1,23 @@
-import { useEffect, useState } from 'react'
-import { Users, Loader2, Trash2, ShieldCheck, ShieldX, Crown, UserIcon } from 'lucide-react'
+import { useState } from 'react'
+import { Users, Trash2, ShieldCheck, ShieldX, Crown, UserIcon } from 'lucide-react'
 import { userService } from '@/services/endurance'
 import type { User } from '@/types'
+import PageState from '@/components/PageState'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAsync } from '@/hooks/useAsync'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 export default function UsersPage() {
   const { userId } = useAuth()
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const fetchUsers = () => {
-    setLoading(true)
-    userService.getAll()
-      .then((d) => setUsers(d.users))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { fetchUsers() }, [])
+  const { data, loading, error, refetch } = useAsync(() => userService.getAll().then((d) => d.users))
+  const users: User[] = data ?? []
 
   const handleToggleActive = async (u: User) => {
     try {
       await userService.update(u.id, { name: u.name, active: !u.active })
       toast.success(`Usuário ${u.active ? 'desativado' : 'ativado'}`)
-      fetchUsers()
+      refetch()
     } catch { /* handled */ }
   }
 
@@ -34,7 +27,7 @@ export default function UsersPage() {
     try {
       await userService.changeRole(u.id, newRole)
       toast.success(`Perfil alterado para ${newRole === 'admin' ? 'Administrador' : 'Usuário'}`)
-      fetchUsers()
+      refetch()
     } catch { /* handled */ }
   }
 
@@ -43,7 +36,7 @@ export default function UsersPage() {
     try {
       await userService.delete(u.id)
       toast.success('Usuário excluído')
-      fetchUsers()
+      refetch()
     } catch { /* handled */ }
   }
 
@@ -54,9 +47,7 @@ export default function UsersPage() {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{users.length} usuário(s) cadastrado(s)</p>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>
-      ) : (
+      <PageState loading={loading} error={error}>
         <div className="card overflow-hidden p-0">
           <table className="w-full text-sm">
             <thead>
@@ -123,7 +114,7 @@ export default function UsersPage() {
             </tbody>
           </table>
         </div>
-      )}
+      </PageState>
     </div>
   )
 }

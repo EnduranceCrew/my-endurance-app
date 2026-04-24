@@ -1,34 +1,33 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Loader2, MapPin, Users, LayoutGrid, List } from 'lucide-react'
+import { ArrowLeft, MapPin, Users, LayoutGrid, List } from 'lucide-react'
 import { labService } from '@/services/endurance'
-import type { Lab, Computer, Alert } from '@/types'
+import type { Alert } from '@/types'
 import ComputerGrid from '@/components/ComputerGrid'
 import AlertBadge from '@/components/AlertBadge'
+import PageState from '@/components/PageState'
+import { useAsync } from '@/hooks/useAsync'
 
 export default function LabDetail() {
   const { id } = useParams<{ id: string }>()
-  const [lab, setLab] = useState<Lab | null>(null)
-  const [computers, setComputers] = useState<Computer[]>([])
-  const [alerts, setAlerts] = useState<Alert[]>([])
-  const [loading, setLoading] = useState(true)
   const [compact, setCompact] = useState(true)
 
-  useEffect(() => {
-    if (!id) return
-    Promise.all([
-      labService.getById(id),
-      labService.getComputers(id),
-      labService.getAlerts(id, false),
-    ])
-      .then(([l, c, a]) => { setLab(l); setComputers(c); setAlerts(a) })
-      .finally(() => setLoading(false))
-  }, [id])
+  const { data, loading, error } = useAsync(
+    () => Promise.all([
+      labService.getById(id!),
+      labService.getComputers(id!),
+      labService.getAlerts(id!, false),
+    ]).then(([l, c, a]) => ({ lab: l, computers: c, alerts: a as Alert[] })),
+    [id]
+  )
 
-  const refreshAlerts = () => labService.getAlerts(id!, false).then(setAlerts)
+  const lab = data?.lab ?? null
+  const computers = data?.computers ?? []
+  const [alerts, setAlerts] = useState<Alert[]>([])
 
-  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>
-  if (!lab) return <div className="text-center py-16 text-gray-400">Laboratório não encontrado</div>
+  useEffect(() => { if (data?.alerts) setAlerts(data.alerts) }, [data])
+
+  const refreshAlerts = () => labService.getAlerts(id!, false).then((a) => setAlerts(a as Alert[]))
 
   const onlineCount = computers.filter((c) => c.status === 'online').length
   const openAlerts = alerts.filter((a) => !a.resolved)
@@ -36,6 +35,8 @@ export default function LabDetail() {
   const statusColor = { active: 'bg-emerald-500', inactive: 'bg-gray-400', maintenance: 'bg-yellow-400' }
 
   return (
+    <PageState loading={loading} error={error}>
+    {lab ? (
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2">
@@ -123,5 +124,9 @@ export default function LabDetail() {
         </div>
       )}
     </div>
+    ) : (
+      <div className="text-center py-16 text-gray-400">Laboratório não encontrado</div>
+    )}
+    </PageState>
   )
 }

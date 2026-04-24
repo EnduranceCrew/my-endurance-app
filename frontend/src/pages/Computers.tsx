@@ -3,7 +3,9 @@ import { Monitor, Loader2, Plus, Trash2 } from 'lucide-react'
 import { computerService, labService } from '@/services/endurance'
 import type { Computer, ComputerStatus, Lab } from '@/types'
 import ComputerGrid from '@/components/ComputerGrid'
+import PageState from '@/components/PageState'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAsync } from '@/hooks/useAsync'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -19,22 +21,17 @@ const emptyForm = { lab_id: '', hostname: '', ip_address: '', mac_address: '', o
 
 export default function Computers() {
   const { isAdmin } = useAuth()
-  const [computers, setComputers] = useState<Computer[]>([])
   const [labs, setLabs] = useState<Lab[]>([])
-  const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<ComputerStatus | ''>('')
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
 
-  const fetchComputers = () => {
-    setLoading(true)
-    computerService.getAll(1, 200, statusFilter || undefined)
-      .then((d) => setComputers(d.computers))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { fetchComputers() }, [statusFilter])
+  const { data, loading, error, refetch } = useAsync(
+    () => computerService.getAll(1, 200, statusFilter || undefined).then((d) => d.computers),
+    [statusFilter]
+  )
+  const computers: Computer[] = data ?? []
 
   useEffect(() => {
     if (isAdmin) {
@@ -47,7 +44,7 @@ export default function Computers() {
     try {
       await computerService.delete(id)
       toast.success('Computador excluído')
-      fetchComputers()
+      refetch()
     } catch { /* handled by interceptor */ }
   }
 
@@ -60,7 +57,7 @@ export default function Computers() {
       toast.success('Computador adicionado!')
       setShowModal(false)
       setForm(emptyForm)
-      fetchComputers()
+      refetch()
     } finally { setSaving(false) }
   }
 
@@ -99,14 +96,12 @@ export default function Computers() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>
-      ) : (
+      <PageState loading={loading} error={error}>
         <ComputerGrid
           computers={computers}
           onDelete={isAdmin ? handleDelete : undefined}
         />
-      )}
+      </PageState>
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">

@@ -96,12 +96,18 @@ func (r *ComputerRepository) FindByLabID(_ context.Context, labID uuid.UUID) ([]
 	return out, nil
 }
 
-func (r *ComputerRepository) FindAll(_ context.Context, page, limit int) ([]*domainComputer.Computer, int64, error) {
+func (r *ComputerRepository) FindAll(_ context.Context, page, limit int, statusFilter string) ([]*domainComputer.Computer, int64, error) {
 	var models []gormComputer
 	var total int64
 	offset := (page - 1) * limit
-	r.db().Model(&gormComputer{}).Count(&total)
-	if err := r.db().Offset(offset).Limit(limit).Order("hostname ASC").Find(&models).Error; err != nil {
+
+	q := r.db().Model(&gormComputer{})
+	if statusFilter != "" {
+		q = q.Where("status = ?", statusFilter)
+	}
+	q.Count(&total)
+
+	if err := q.Offset(offset).Limit(limit).Order("hostname ASC").Find(&models).Error; err != nil {
 		return nil, 0, err
 	}
 	out := make([]*domainComputer.Computer, 0, len(models))
@@ -150,6 +156,33 @@ func (r *ComputerRepository) CountByStatus(_ context.Context) (map[domainCompute
 	m := make(map[domainComputer.Status]int64)
 	for _, r := range results {
 		m[domainComputer.Status(r.Status)] = r.Count
+	}
+	return m, nil
+}
+
+func (r *ComputerRepository) CountByLabIDs(_ context.Context, labIDs []uuid.UUID) (map[uuid.UUID]map[domainComputer.Status]int64, error) {
+	if len(labIDs) == 0 {
+		return map[uuid.UUID]map[domainComputer.Status]int64{}, nil
+	}
+	type result struct {
+		LabID  uuid.UUID `gorm:"column:lab_id"`
+		Status string    `gorm:"column:status"`
+		Count  int64     `gorm:"column:count"`
+	}
+	var results []result
+	if err := r.db().Model(&gormComputer{}).
+		Select("lab_id, status, count(*) as count").
+		Where("lab_id IN ?", labIDs).
+		Group("lab_id, status").
+		Scan(&results).Error; err != nil {
+		return nil, err
+	}
+	m := make(map[uuid.UUID]map[domainComputer.Status]int64)
+	for _, res := range results {
+		if m[res.LabID] == nil {
+			m[res.LabID] = make(map[domainComputer.Status]int64)
+		}
+		m[res.LabID][domainComputer.Status(res.Status)] = res.Count
 	}
 	return m, nil
 }

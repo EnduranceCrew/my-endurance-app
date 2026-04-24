@@ -103,7 +103,7 @@ func main() {
 
 // seedAdmin cria o administrador padrão se não existir nenhum usuário.
 func seedAdmin(authUC appAuth.UseCase) {
-	_, err := authUC.Register(appAuth.RegisterInput{
+	_, err := authUC.Register(context.Background(), appAuth.RegisterInput{
 		Name:     "Administrador",
 		Email:    "admin@endurance.dev",
 		CPF:      "529.982.247-25", // CPF válido para seed

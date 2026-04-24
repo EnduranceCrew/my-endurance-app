@@ -1,6 +1,7 @@
 package appuser
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -64,11 +65,11 @@ func toOutput(u *domainUser.User) *UserOutput {
 // ── Port de entrada ──────────────────────────────────────────────────────────
 
 type UseCase interface {
-	GetAll(page, limit int) (*ListOutput, error)
-	GetByID(id uuid.UUID) (*UserOutput, error)
-	GetMe(id uuid.UUID) (*UserOutput, error)
-	Update(id uuid.UUID, input UpdateInput) (*UserOutput, error)
-	Delete(id uuid.UUID) error
-	ChangePassword(id uuid.UUID, input ChangePasswordInput) error
-	ChangeRole(id uuid.UUID, input ChangeRoleInput, requestorID uuid.UUID) (*UserOutput, error)
+	GetAll(ctx context.Context, page, limit int) (*ListOutput, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*UserOutput, error)
+	GetMe(ctx context.Context, id uuid.UUID) (*UserOutput, error)
+	Update(ctx context.Context, id uuid.UUID, input UpdateInput) (*UserOutput, error)
+	Delete(ctx context.Context, id uuid.UUID) error
+	ChangePassword(ctx context.Context, id uuid.UUID, input ChangePasswordInput) error
+	ChangeRole(ctx context.Context, id uuid.UUID, input ChangeRoleInput, requestorID uuid.UUID) (*UserOutput, error)
 }

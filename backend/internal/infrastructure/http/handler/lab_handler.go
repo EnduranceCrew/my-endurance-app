@@ -19,7 +19,7 @@ func NewLabHandler(uc appLab.UseCase) *LabHandler {
 
 func (h *LabHandler) GetAll(c *gin.Context) {
 	page, limit := paginationParams(c)
-	out, err := h.useCase.GetAll(page, limit)
+	out, err := h.useCase.GetAll(c.Request.Context(), page, limit)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -33,7 +33,7 @@ func (h *LabHandler) GetByID(c *gin.Context) {
 		response.BadRequest(c, "id inválido")
 		return
 	}
-	out, err := h.useCase.GetByID(id)
+	out, err := h.useCase.GetByID(c.Request.Context(), id)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -47,7 +47,7 @@ func (h *LabHandler) Create(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	out, err := h.useCase.Create(input)
+	out, err := h.useCase.Create(c.Request.Context(), input)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -66,7 +66,7 @@ func (h *LabHandler) Update(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	out, err := h.useCase.Update(id, input)
+	out, err := h.useCase.Update(c.Request.Context(), id, input)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -80,7 +80,7 @@ func (h *LabHandler) Delete(c *gin.Context) {
 		response.BadRequest(c, "id inválido")
 		return
 	}
-	if err := h.useCase.Delete(id); err != nil {
+	if err := h.useCase.Delete(c.Request.Context(), id); err != nil {
 		handleError(c, err)
 		return
 	}

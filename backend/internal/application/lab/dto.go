@@ -1,6 +1,7 @@
 package applab
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -66,9 +67,9 @@ func toOutput(l *domainLab.Lab) *LabOutput {
 // ── Port de entrada ──────────────────────────────────────────────────────────
 
 type UseCase interface {
-	GetAll(page, limit int) (*ListOutput, error)
-	GetByID(id uuid.UUID) (*LabOutput, error)
-	Create(input CreateInput) (*LabOutput, error)
-	Update(id uuid.UUID, input UpdateInput) (*LabOutput, error)
-	Delete(id uuid.UUID) error
+	GetAll(ctx context.Context, page, limit int) (*ListOutput, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*LabOutput, error)
+	Create(ctx context.Context, input CreateInput) (*LabOutput, error)
+	Update(ctx context.Context, id uuid.UUID, input UpdateInput) (*LabOutput, error)
+	Delete(ctx context.Context, id uuid.UUID) error
 }

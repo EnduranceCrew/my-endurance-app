@@ -16,7 +16,7 @@ func NewDashboardHandler(uc dashboard.UseCase) *DashboardHandler {
 
 // GetStats retorna o resumo geral para o painel de controle.
 func (h *DashboardHandler) GetStats(c *gin.Context) {
-	out, err := h.useCase.GetStats()
+	out, err := h.useCase.GetStats(c.Request.Context())
 	if err != nil {
 		handleError(c, err)
 		return

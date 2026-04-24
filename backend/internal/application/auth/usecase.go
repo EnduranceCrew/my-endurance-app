@@ -35,9 +35,7 @@ func NewUseCase(repo user.Repository, hash HashService, jwt JWTService) UseCase 
 	return &useCaseImpl{userRepo: repo, hashSvc: hash, jwtSvc: jwt}
 }
 
-func (uc *useCaseImpl) Login(input LoginInput) (*TokenOutput, error) {
-	ctx := context.Background()
-
+func (uc *useCaseImpl) Login(ctx context.Context, input LoginInput) (*TokenOutput, error) {
 	u, err := uc.userRepo.FindByEmail(ctx, input.Email)
 	if err != nil {
 		return nil, apperrors.Unauthorized(apperrors.ErrInvalidCredentials)
@@ -67,9 +65,7 @@ func (uc *useCaseImpl) Login(input LoginInput) (*TokenOutput, error) {
 	}, nil
 }
 
-func (uc *useCaseImpl) Register(input RegisterInput) (*TokenOutput, error) {
-	ctx := context.Background()
-
+func (uc *useCaseImpl) Register(ctx context.Context, input RegisterInput) (*TokenOutput, error) {
 	input.Name = strings.TrimSpace(input.Name)
 	input.Email = strings.TrimSpace(strings.ToLower(input.Email))
 

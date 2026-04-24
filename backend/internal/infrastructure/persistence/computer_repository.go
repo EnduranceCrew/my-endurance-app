@@ -67,15 +67,15 @@ func fromDomainComputer(c *domainComputer.Computer) *gormComputer {
 type ComputerRepository struct{}
 
 func NewComputerRepository() *ComputerRepository { return &ComputerRepository{} }
-func (r *ComputerRepository) db() *gorm.DB        { return config.DB }
+func (r *ComputerRepository) db(ctx context.Context) *gorm.DB { return config.DB.WithContext(ctx) }
 
-func (r *ComputerRepository) Create(_ context.Context, c *domainComputer.Computer) error {
-	return r.db().Create(fromDomainComputer(c)).Error
+func (r *ComputerRepository) Create(ctx context.Context, c *domainComputer.Computer) error {
+	return r.db(ctx).Create(fromDomainComputer(c)).Error
 }
 
-func (r *ComputerRepository) FindByID(_ context.Context, id uuid.UUID) (*domainComputer.Computer, error) {
+func (r *ComputerRepository) FindByID(ctx context.Context, id uuid.UUID) (*domainComputer.Computer, error) {
 	var m gormComputer
-	if err := r.db().First(&m, "id = ?", id).Error; err != nil {
+	if err := r.db(ctx).First(&m, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domainComputer.ErrNotFound
 		}
@@ -84,9 +84,9 @@ func (r *ComputerRepository) FindByID(_ context.Context, id uuid.UUID) (*domainC
 	return toDomainComputer(&m), nil
 }
 
-func (r *ComputerRepository) FindByLabID(_ context.Context, labID uuid.UUID) ([]*domainComputer.Computer, error) {
+func (r *ComputerRepository) FindByLabID(ctx context.Context, labID uuid.UUID) ([]*domainComputer.Computer, error) {
 	var models []gormComputer
-	if err := r.db().Where("lab_id = ?", labID).Find(&models).Error; err != nil {
+	if err := r.db(ctx).Where("lab_id = ?", labID).Find(&models).Error; err != nil {
 		return nil, err
 	}
 	out := make([]*domainComputer.Computer, 0, len(models))
@@ -96,12 +96,12 @@ func (r *ComputerRepository) FindByLabID(_ context.Context, labID uuid.UUID) ([]
 	return out, nil
 }
 
-func (r *ComputerRepository) FindAll(_ context.Context, page, limit int, statusFilter string) ([]*domainComputer.Computer, int64, error) {
+func (r *ComputerRepository) FindAll(ctx context.Context, page, limit int, statusFilter string) ([]*domainComputer.Computer, int64, error) {
 	var models []gormComputer
 	var total int64
 	offset := (page - 1) * limit
 
-	q := r.db().Model(&gormComputer{})
+	q := r.db(ctx).Model(&gormComputer{})
 	if statusFilter != "" {
 		q = q.Where("status = ?", statusFilter)
 	}
@@ -117,8 +117,8 @@ func (r *ComputerRepository) FindAll(_ context.Context, page, limit int, statusF
 	return out, total, nil
 }
 
-func (r *ComputerRepository) Update(_ context.Context, c *domainComputer.Computer) error {
-	return r.db().Model(&gormComputer{}).Where("id = ?", c.ID).Updates(map[string]interface{}{
+func (r *ComputerRepository) Update(ctx context.Context, c *domainComputer.Computer) error {
+	return r.db(ctx).Model(&gormComputer{}).Where("id = ?", c.ID).Updates(map[string]interface{}{
 		"hostname":    c.Hostname,
 		"ip_address":  c.IPAddress,
 		"mac_address": c.MACAddress,
@@ -131,26 +131,26 @@ func (r *ComputerRepository) Update(_ context.Context, c *domainComputer.Compute
 	}).Error
 }
 
-func (r *ComputerRepository) UpdateStatus(_ context.Context, id uuid.UUID, status domainComputer.Status) error {
+func (r *ComputerRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status domainComputer.Status) error {
 	now := time.Now().UTC()
 	updates := map[string]interface{}{"status": string(status), "updated_at": now}
 	if status == domainComputer.StatusOnline {
 		updates["last_seen"] = now
 	}
-	return r.db().Model(&gormComputer{}).Where("id = ?", id).Updates(updates).Error
+	return r.db(ctx).Model(&gormComputer{}).Where("id = ?", id).Updates(updates).Error
 }
 
-func (r *ComputerRepository) Delete(_ context.Context, id uuid.UUID) error {
-	return r.db().Delete(&gormComputer{}, "id = ?", id).Error
+func (r *ComputerRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.db(ctx).Delete(&gormComputer{}, "id = ?", id).Error
 }
 
-func (r *ComputerRepository) CountByStatus(_ context.Context) (map[domainComputer.Status]int64, error) {
+func (r *ComputerRepository) CountByStatus(ctx context.Context) (map[domainComputer.Status]int64, error) {
 	type result struct {
 		Status string
 		Count  int64
 	}
 	var results []result
-	if err := r.db().Model(&gormComputer{}).Select("status, count(*) as count").Group("status").Scan(&results).Error; err != nil {
+	if err := r.db(ctx).Model(&gormComputer{}).Select("status, count(*) as count").Group("status").Scan(&results).Error; err != nil {
 		return nil, err
 	}
 	m := make(map[domainComputer.Status]int64)
@@ -160,7 +160,7 @@ func (r *ComputerRepository) CountByStatus(_ context.Context) (map[domainCompute
 	return m, nil
 }
 
-func (r *ComputerRepository) CountByLabIDs(_ context.Context, labIDs []uuid.UUID) (map[uuid.UUID]map[domainComputer.Status]int64, error) {
+func (r *ComputerRepository) CountByLabIDs(ctx context.Context, labIDs []uuid.UUID) (map[uuid.UUID]map[domainComputer.Status]int64, error) {
 	if len(labIDs) == 0 {
 		return map[uuid.UUID]map[domainComputer.Status]int64{}, nil
 	}
@@ -170,7 +170,7 @@ func (r *ComputerRepository) CountByLabIDs(_ context.Context, labIDs []uuid.UUID
 		Count  int64     `gorm:"column:count"`
 	}
 	var results []result
-	if err := r.db().Model(&gormComputer{}).
+	if err := r.db(ctx).Model(&gormComputer{}).
 		Select("lab_id, status, count(*) as count").
 		Where("lab_id IN ?", labIDs).
 		Group("lab_id, status").

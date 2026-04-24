@@ -1,7 +1,10 @@
 // Package auth contém os DTOs e a interface do caso de uso de autenticação.
 package auth
 
-import "github.com/google/uuid"
+import (
+	"context"
+	"github.com/google/uuid"
+)
 
 // ── Input DTOs (vêm do cliente) ──────────────────────────────────────────────
 
@@ -32,6 +35,6 @@ type TokenOutput struct {
 // ── Port de entrada (primary port) ──────────────────────────────────────────
 
 type UseCase interface {
-	Login(input LoginInput) (*TokenOutput, error)
-	Register(input RegisterInput) (*TokenOutput, error)
+	Login(ctx context.Context, input LoginInput) (*TokenOutput, error)
+	Register(ctx context.Context, input RegisterInput) (*TokenOutput, error)
 }

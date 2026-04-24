@@ -34,7 +34,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	out, err := h.useCase.Login(input)
+	out, err := h.useCase.Login(c.Request.Context(), input)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -58,7 +58,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	out, err := h.useCase.Register(input)
+	out, err := h.useCase.Register(c.Request.Context(), input)
 	if err != nil {
 		handleError(c, err)
 		return

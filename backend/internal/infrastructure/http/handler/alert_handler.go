@@ -18,7 +18,7 @@ func NewAlertHandler(uc appAlert.UseCase) *AlertHandler {
 func (h *AlertHandler) GetAll(c *gin.Context) {
 	onlyOpen := c.DefaultQuery("open", "true") == "true"
 	page, limit := paginationParams(c)
-	out, err := h.useCase.GetAll(onlyOpen, page, limit)
+	out, err := h.useCase.GetAll(c.Request.Context(), onlyOpen, page, limit)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -33,7 +33,7 @@ func (h *AlertHandler) GetByLabID(c *gin.Context) {
 		return
 	}
 	onlyOpen := c.DefaultQuery("open", "true") == "true"
-	out, err := h.useCase.GetByLabID(labID, onlyOpen)
+	out, err := h.useCase.GetByLabID(c.Request.Context(), labID, onlyOpen)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -47,7 +47,7 @@ func (h *AlertHandler) Create(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	out, err := h.useCase.Create(input)
+	out, err := h.useCase.Create(c.Request.Context(), input)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -61,7 +61,7 @@ func (h *AlertHandler) Resolve(c *gin.Context) {
 		response.BadRequest(c, "id inválido")
 		return
 	}
-	if err := h.useCase.Resolve(id); err != nil {
+	if err := h.useCase.Resolve(c.Request.Context(), id); err != nil {
 		handleError(c, err)
 		return
 	}
@@ -74,7 +74,7 @@ func (h *AlertHandler) Delete(c *gin.Context) {
 		response.BadRequest(c, "id inválido")
 		return
 	}
-	if err := h.useCase.Delete(id); err != nil {
+	if err := h.useCase.Delete(c.Request.Context(), id); err != nil {
 		handleError(c, err)
 		return
 	}
@@ -87,7 +87,7 @@ func (h *AlertHandler) BulkResolve(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	count, err := h.useCase.BulkResolve(input)
+	count, err := h.useCase.BulkResolve(c.Request.Context(), input)
 	if err != nil {
 		handleError(c, err)
 		return

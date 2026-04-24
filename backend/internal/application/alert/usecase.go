@@ -2,22 +2,22 @@ package appalert
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
-	"endurance/internal/domain/alert"
+	domainAlert "endurance/internal/domain/alert"
 	"endurance/pkg/apperrors"
 )
 
 type useCaseImpl struct {
-	repo alert.Repository
+	repo domainAlert.Repository
 }
 
-func NewUseCase(repo alert.Repository) UseCase {
+func NewUseCase(repo domainAlert.Repository) UseCase {
 	return &useCaseImpl{repo: repo}
 }
 
-func (uc *useCaseImpl) GetAll(onlyOpen bool, page, limit int) (*ListOutput, error) {
-	ctx := context.Background()
+func (uc *useCaseImpl) GetAll(ctx context.Context, onlyOpen bool, page, limit int) (*ListOutput, error) {
 	items, total, err := uc.repo.FindAll(ctx, onlyOpen, page, limit)
 	if err != nil {
 		return nil, apperrors.Internal(err)
@@ -29,8 +29,7 @@ func (uc *useCaseImpl) GetAll(onlyOpen bool, page, limit int) (*ListOutput, erro
 	return &ListOutput{Alerts: out, Total: total, Page: page, Limit: limit}, nil
 }
 
-func (uc *useCaseImpl) GetByLabID(labID uuid.UUID, onlyOpen bool) ([]*AlertOutput, error) {
-	ctx := context.Background()
+func (uc *useCaseImpl) GetByLabID(ctx context.Context, labID uuid.UUID, onlyOpen bool) ([]*AlertOutput, error) {
 	items, err := uc.repo.FindByLabID(ctx, labID, onlyOpen)
 	if err != nil {
 		return nil, apperrors.Internal(err)
@@ -42,33 +41,35 @@ func (uc *useCaseImpl) GetByLabID(labID uuid.UUID, onlyOpen bool) ([]*AlertOutpu
 	return out, nil
 }
 
-func (uc *useCaseImpl) Create(input CreateInput) (*AlertOutput, error) {
-	ctx := context.Background()
-	a := alert.New(input.LabID, input.ComputerID, input.Type, input.Severity, input.Message)
+func (uc *useCaseImpl) Create(ctx context.Context, input CreateInput) (*AlertOutput, error) {
+	a := domainAlert.New(input.LabID, input.ComputerID, input.Type, input.Severity, input.Message)
 	if err := uc.repo.Create(ctx, a); err != nil {
 		return nil, apperrors.Internal(err)
 	}
 	return toOutput(a), nil
 }
 
-func (uc *useCaseImpl) Resolve(id uuid.UUID) error {
-	ctx := context.Background()
+func (uc *useCaseImpl) Resolve(ctx context.Context, id uuid.UUID) error {
 	if _, err := uc.repo.FindByID(ctx, id); err != nil {
-		return apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainAlert.ErrNotFound) {
+			return apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return apperrors.Internal(err)
 	}
 	return uc.repo.Resolve(ctx, id)
 }
 
-func (uc *useCaseImpl) Delete(id uuid.UUID) error {
-	ctx := context.Background()
+func (uc *useCaseImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	if _, err := uc.repo.FindByID(ctx, id); err != nil {
-		return apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainAlert.ErrNotFound) {
+			return apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return apperrors.Internal(err)
 	}
 	return uc.repo.Delete(ctx, id)
 }
 
-func (uc *useCaseImpl) BulkResolve(input BulkResolveInput) (int64, error) {
-	ctx := context.Background()
+func (uc *useCaseImpl) BulkResolve(ctx context.Context, input BulkResolveInput) (int64, error) {
 	count, err := uc.repo.BulkResolve(ctx, input.IDs)
 	if err != nil {
 		return 0, apperrors.Internal(err)

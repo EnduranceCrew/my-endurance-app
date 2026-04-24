@@ -2,25 +2,24 @@ package applab
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"endurance/internal/domain/computer"
-	"endurance/internal/domain/lab"
+	domainLab "endurance/internal/domain/lab"
 	"endurance/pkg/apperrors"
 )
 
 type useCaseImpl struct {
-	repo         lab.Repository
+	repo         domainLab.Repository
 	computerRepo computer.Repository
 }
 
-func NewUseCase(repo lab.Repository, computerRepo computer.Repository) UseCase {
+func NewUseCase(repo domainLab.Repository, computerRepo computer.Repository) UseCase {
 	return &useCaseImpl{repo: repo, computerRepo: computerRepo}
 }
 
-func (uc *useCaseImpl) GetAll(page, limit int) (*ListOutput, error) {
-	ctx := context.Background()
-
+func (uc *useCaseImpl) GetAll(ctx context.Context, page, limit int) (*ListOutput, error) {
 	labs, total, err := uc.repo.FindAll(ctx, page, limit)
 	if err != nil {
 		return nil, apperrors.Internal(err)
@@ -51,21 +50,20 @@ func (uc *useCaseImpl) GetAll(page, limit int) (*ListOutput, error) {
 	return &ListOutput{Labs: out, Total: total, Page: page, Limit: limit}, nil
 }
 
-func (uc *useCaseImpl) GetByID(id uuid.UUID) (*LabOutput, error) {
-	ctx := context.Background()
-
+func (uc *useCaseImpl) GetByID(ctx context.Context, id uuid.UUID) (*LabOutput, error) {
 	l, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainLab.ErrNotFound) {
+			return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return nil, apperrors.Internal(err)
 	}
 
 	return toOutput(l), nil
 }
 
-func (uc *useCaseImpl) Create(input CreateInput) (*LabOutput, error) {
-	ctx := context.Background()
-
-	l := lab.New(input.Name, input.Location, input.Description, input.Capacity, input.ResponsibleID)
+func (uc *useCaseImpl) Create(ctx context.Context, input CreateInput) (*LabOutput, error) {
+	l := domainLab.New(input.Name, input.Location, input.Description, input.Capacity, input.ResponsibleID)
 
 	if err := uc.repo.Create(ctx, l); err != nil {
 		return nil, apperrors.Internal(err)
@@ -74,12 +72,13 @@ func (uc *useCaseImpl) Create(input CreateInput) (*LabOutput, error) {
 	return toOutput(l), nil
 }
 
-func (uc *useCaseImpl) Update(id uuid.UUID, input UpdateInput) (*LabOutput, error) {
-	ctx := context.Background()
-
+func (uc *useCaseImpl) Update(ctx context.Context, id uuid.UUID, input UpdateInput) (*LabOutput, error) {
 	l, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainLab.ErrNotFound) {
+			return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return nil, apperrors.Internal(err)
 	}
 
 	l.Name = input.Name
@@ -96,11 +95,12 @@ func (uc *useCaseImpl) Update(id uuid.UUID, input UpdateInput) (*LabOutput, erro
 	return toOutput(l), nil
 }
 
-func (uc *useCaseImpl) Delete(id uuid.UUID) error {
-	ctx := context.Background()
-
+func (uc *useCaseImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	if _, err := uc.repo.FindByID(ctx, id); err != nil {
-		return apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainLab.ErrNotFound) {
+			return apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return apperrors.Internal(err)
 	}
 
 	if err := uc.repo.Delete(ctx, id); err != nil {

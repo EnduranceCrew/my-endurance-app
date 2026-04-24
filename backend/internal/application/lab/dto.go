@@ -36,6 +36,8 @@ type LabOutput struct {
 	Status        domainLab.Status `json:"status"`
 	Description   string           `json:"description"`
 	ResponsibleID *uuid.UUID       `json:"responsible_id,omitempty"`
+	ComputerCount int64            `json:"computer_count"`
+	OnlineCount   int64            `json:"online_count"`
 	CreatedAt     time.Time        `json:"created_at"`
 	UpdatedAt     time.Time        `json:"updated_at"`
 }

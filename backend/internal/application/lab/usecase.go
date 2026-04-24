@@ -4,16 +4,18 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"endurance/internal/domain/computer"
 	"endurance/internal/domain/lab"
 	"endurance/pkg/apperrors"
 )
 
 type useCaseImpl struct {
-	repo lab.Repository
+	repo         lab.Repository
+	computerRepo computer.Repository
 }
 
-func NewUseCase(repo lab.Repository) UseCase {
-	return &useCaseImpl{repo: repo}
+func NewUseCase(repo lab.Repository, computerRepo computer.Repository) UseCase {
+	return &useCaseImpl{repo: repo, computerRepo: computerRepo}
 }
 
 func (uc *useCaseImpl) GetAll(page, limit int) (*ListOutput, error) {
@@ -24,9 +26,26 @@ func (uc *useCaseImpl) GetAll(page, limit int) (*ListOutput, error) {
 		return nil, apperrors.Internal(err)
 	}
 
+	labIDs := make([]uuid.UUID, 0, len(labs))
+	for _, l := range labs {
+		labIDs = append(labIDs, l.ID)
+	}
+
+	counts, err := uc.computerRepo.CountByLabIDs(ctx, labIDs)
+	if err != nil {
+		return nil, apperrors.Internal(err)
+	}
+
 	out := make([]*LabOutput, 0, len(labs))
 	for _, l := range labs {
-		out = append(out, toOutput(l))
+		o := toOutput(l)
+		if cm, ok := counts[l.ID]; ok {
+			for _, v := range cm {
+				o.ComputerCount += v
+			}
+			o.OnlineCount = cm[computer.StatusOnline]
+		}
+		out = append(out, o)
 	}
 
 	return &ListOutput{Labs: out, Total: total, Page: page, Limit: limit}, nil

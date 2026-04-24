@@ -52,7 +52,7 @@ func main() {
 	// ── 5. Casos de uso (application layer) ─────────────────────────────────
 	authUC      := appAuth.NewUseCase(userRepo, hashSvc, jwtSvc)
 	userUC      := appUser.NewUseCase(userRepo, hashSvc)
-	labUC       := appLab.NewUseCase(labRepo)
+	labUC       := appLab.NewUseCase(labRepo, computerRepo)
 	computerUC  := appComputer.NewUseCase(computerRepo)
 	alertUC     := appAlert.NewUseCase(alertRepo)
 	dashboardUC := dashboard.NewUseCase(labRepo, computerRepo, userRepo, alertRepo)

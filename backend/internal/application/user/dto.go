@@ -19,6 +19,10 @@ type ChangePasswordInput struct {
 	NewPassword     string `json:"new_password"     binding:"required,min=8"`
 }
 
+type ChangeRoleInput struct {
+	Role string `json:"role" binding:"required,oneof=admin user"`
+}
+
 type PaginationInput struct {
 	Page  int `form:"page,default=1"   binding:"min=1"`
 	Limit int `form:"limit,default=20" binding:"min=1,max=100"`
@@ -34,6 +38,7 @@ type UserOutput struct {
 	Role      string    `json:"role"`
 	Active    bool      `json:"active"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ListOutput struct {
@@ -52,6 +57,7 @@ func toOutput(u *domainUser.User) *UserOutput {
 		Role:      string(u.Role),
 		Active:    u.Active,
 		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
 	}
 }
 
@@ -60,7 +66,9 @@ func toOutput(u *domainUser.User) *UserOutput {
 type UseCase interface {
 	GetAll(page, limit int) (*ListOutput, error)
 	GetByID(id uuid.UUID) (*UserOutput, error)
+	GetMe(id uuid.UUID) (*UserOutput, error)
 	Update(id uuid.UUID, input UpdateInput) (*UserOutput, error)
 	Delete(id uuid.UUID) error
 	ChangePassword(id uuid.UUID, input ChangePasswordInput) error
+	ChangeRole(id uuid.UUID, input ChangeRoleInput, requestorID uuid.UUID) (*UserOutput, error)
 }

@@ -16,11 +16,21 @@ func NewUseCase(repo computer.Repository) UseCase {
 	return &useCaseImpl{repo: repo}
 }
 
-func (uc *useCaseImpl) GetAll(page, limit int) (*ListOutput, error) {
+func (uc *useCaseImpl) GetAll(page, limit int, statusFilter string) (*ListOutput, error) {
 	ctx := context.Background()
 	items, total, err := uc.repo.FindAll(ctx, page, limit)
 	if err != nil {
 		return nil, apperrors.Internal(err)
+	}
+	if statusFilter != "" {
+		filtered := items[:0]
+		for _, c := range items {
+			if string(c.Status) == statusFilter {
+				filtered = append(filtered, c)
+			}
+		}
+		items = filtered
+		total = int64(len(filtered))
 	}
 	out := make([]*ComputerOutput, 0, len(items))
 	for _, c := range items {

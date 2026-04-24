@@ -80,3 +80,17 @@ func (h *AlertHandler) Delete(c *gin.Context) {
 	}
 	response.NoContent(c)
 }
+
+func (h *AlertHandler) BulkResolve(c *gin.Context) {
+	var input appAlert.BulkResolveInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	count, err := h.useCase.BulkResolve(input)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+	response.OK(c, gin.H{"resolved": count})
+}

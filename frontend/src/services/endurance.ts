@@ -45,8 +45,11 @@ export const labService = {
 // ── Computers ────────────────────────────────────────────────────────────────
 
 export const computerService = {
-  getAll: (page = 1, limit = 20) =>
-    api.get<{ data: { computers: Computer[]; total: number } }>(`/computers?page=${page}&limit=${limit}`).then((r) => r.data.data!),
+  getAll: (page = 1, limit = 20, status?: string) => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+    if (status) params.set('status', status)
+    return api.get<{ data: { computers: Computer[]; total: number } }>(`/computers?${params}`).then((r) => r.data.data!)
+  },
 
   updateStatus: (id: string, status: Computer['status']) =>
     api.patch(`/computers/${id}/status`, { status }),
@@ -65,6 +68,9 @@ export const alertService = {
 
   resolve: (id: string) => api.patch(`/alerts/${id}/resolve`),
 
+  bulkResolve: (ids: string[]) =>
+    api.post<{ data: { resolved: number } }>('/alerts/bulk-resolve', { ids }).then((r) => r.data.data!),
+
   create: (data: Partial<Alert>) =>
     api.post<{ data: Alert }>('/alerts', data).then((r) => r.data.data!),
 
@@ -77,6 +83,9 @@ export const userService = {
   getAll: (page = 1, limit = 20) =>
     api.get<{ data: { users: User[]; total: number } }>(`/users?page=${page}&limit=${limit}`).then((r) => r.data.data!),
 
+  me: () =>
+    api.get<{ data: User }>('/users/me').then((r) => r.data.data!),
+
   update: (id: string, data: Partial<User>) =>
     api.put<{ data: User }>(`/users/${id}`, data).then((r) => r.data.data!),
 
@@ -84,4 +93,7 @@ export const userService = {
 
   changePassword: (data: { current_password: string; new_password: string }) =>
     api.post('/users/me/password', data),
+
+  changeRole: (id: string, role: string) =>
+    api.patch<{ data: User }>(`/users/${id}/role`, { role }).then((r) => r.data.data!),
 }

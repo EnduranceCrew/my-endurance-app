@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -22,12 +23,27 @@ func ConnectDB() {
 		lvl = logger.Warn
 	}
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(lvl),
-	})
-	if err != nil {
-		log.Fatalf("[db] falha ao conectar: %v", err)
+	var db *gorm.DB
+	var err error
+	for i := 1; i <= 5; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(lvl)})
+		if err == nil {
+			break
+		}
+		log.Printf("[db] tentativa %d/5 falhou: %v — aguardando 2s...", i, err)
+		time.Sleep(2 * time.Second)
 	}
+	if err != nil {
+		log.Fatalf("[db] não foi possível conectar após 5 tentativas: %v", err)
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("[db] obter sql.DB: %v", err)
+	}
+	sqlDB.SetMaxOpenConns(App.DBMaxOpenConns)
+	sqlDB.SetMaxIdleConns(App.DBMaxIdleConns)
+	sqlDB.SetConnMaxLifetime(time.Duration(App.DBConnMaxLifetimeMin) * time.Minute)
 
 	log.Println("[db] conectado com sucesso!")
 	DB = db

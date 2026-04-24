@@ -2,8 +2,11 @@
 package http
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 
+	"endurance/config"
 	"endurance/internal/infrastructure/http/handler"
 	"endurance/internal/infrastructure/http/middleware"
 	"endurance/internal/infrastructure/security"
@@ -25,10 +28,19 @@ func NewRouter(h Handlers, jwtSvc *security.JWTServiceImpl) *gin.Engine {
 	r.Use(gin.Recovery())
 	r.Use(gin.Logger())
 	r.Use(middleware.CORS())
+	r.Use(middleware.RequestID())
+	r.Use(middleware.SecurityHeaders())
+	r.Use(middleware.RateLimit(config.App.RateLimitRPS, config.App.RateLimitBurst))
+	r.Use(middleware.Timeout(time.Duration(config.App.RequestTimeoutSec) * time.Second))
 
 	// ── Health check ─────────────────────────────────────────────────────────
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok", "service": "endurance"})
+		sqlDB, err := config.DB.DB()
+		dbStatus := "ok"
+		if err != nil || sqlDB.Ping() != nil {
+			dbStatus = "error"
+		}
+		c.JSON(200, gin.H{"status": "ok", "service": "endurance", "db": dbStatus})
 	})
 
 	// ── API v1 ────────────────────────────────────────────────────────────────
@@ -52,8 +64,10 @@ func NewRouter(h Handlers, jwtSvc *security.JWTServiceImpl) *gin.Engine {
 		users := protected.Group("users")
 		{
 			users.GET("", middleware.AdminOnly(), h.User.GetAll)
+			users.GET("me", h.User.GetMe)
 			users.GET(":id", middleware.AdminOnly(), h.User.GetByID)
 			users.PUT(":id", middleware.AdminOnly(), h.User.Update)
+			users.PATCH(":id/role", middleware.AdminOnly(), h.User.ChangeRole)
 			users.DELETE(":id", middleware.AdminOnly(), h.User.Delete)
 			users.POST("me/password", h.User.ChangePassword)
 		}
@@ -89,6 +103,7 @@ func NewRouter(h Handlers, jwtSvc *security.JWTServiceImpl) *gin.Engine {
 		{
 			alerts.GET("", h.Alert.GetAll)
 			alerts.POST("", h.Alert.Create)
+			alerts.POST("bulk-resolve", middleware.AdminOnly(), h.Alert.BulkResolve)
 			alerts.PATCH(":id/resolve", middleware.AdminOnly(), h.Alert.Resolve)
 			alerts.DELETE(":id", middleware.AdminOnly(), h.Alert.Delete)
 		}

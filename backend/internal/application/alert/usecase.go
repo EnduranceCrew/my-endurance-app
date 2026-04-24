@@ -66,3 +66,12 @@ func (uc *useCaseImpl) Delete(id uuid.UUID) error {
 	}
 	return uc.repo.Delete(ctx, id)
 }
+
+func (uc *useCaseImpl) BulkResolve(input BulkResolveInput) (int64, error) {
+	ctx := context.Background()
+	count, err := uc.repo.BulkResolve(ctx, input.IDs)
+	if err != nil {
+		return 0, apperrors.Internal(err)
+	}
+	return count, nil
+}

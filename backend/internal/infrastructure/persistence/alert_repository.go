@@ -43,13 +43,38 @@ func toDomainAlert(m *gormAlert) *domainAlert.Alert {
 	}
 }
 
+func fromDomainAlert(a *domainAlert.Alert) *gormAlert {
+	return &gormAlert{
+		ID:         a.ID,
+		LabID:      a.LabID,
+		ComputerID: a.ComputerID,
+		Type:       string(a.Type),
+		Severity:   string(a.Severity),
+		Message:    a.Message,
+		Resolved:   a.Resolved,
+		ResolvedAt: a.ResolvedAt,
+	}
+}
+
 type AlertRepository struct{}
 
 func NewAlertRepository() *AlertRepository { return &AlertRepository{} }
 func (r *AlertRepository) db() *gorm.DB    { return config.DB }
 
 func (r *AlertRepository) Create(_ context.Context, a *domainAlert.Alert) error {
-	return r.db().Create(a).Error
+	return r.db().Create(fromDomainAlert(a)).Error
+}
+
+func (r *AlertRepository) BulkResolve(_ context.Context, ids []uuid.UUID) (int64, error) {
+	now := time.Now().UTC()
+	result := r.db().Model(&gormAlert{}).
+		Where("id IN ? AND resolved = false", ids).
+		Updates(map[string]interface{}{
+			"resolved":    true,
+			"resolved_at": now,
+			"updated_at":  now,
+		})
+	return result.RowsAffected, result.Error
 }
 
 func (r *AlertRepository) FindByID(_ context.Context, id uuid.UUID) (*domainAlert.Alert, error) {

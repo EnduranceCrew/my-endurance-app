@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	appComputer "endurance/internal/application/computer"
@@ -19,7 +17,8 @@ func NewComputerHandler(uc appComputer.UseCase) *ComputerHandler {
 
 func (h *ComputerHandler) GetAll(c *gin.Context) {
 	page, limit := paginationParams(c)
-	out, err := h.useCase.GetAll(page, limit)
+	statusFilter := c.Query("status")
+	out, err := h.useCase.GetAll(page, limit, statusFilter)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -118,6 +117,3 @@ func (h *ComputerHandler) Delete(c *gin.Context) {
 	}
 	response.NoContent(c)
 }
-
-// Necessário para importar fmt (usado pelo parseInt em lab_handler.go do mesmo package)
-var _ = fmt.Sprintf

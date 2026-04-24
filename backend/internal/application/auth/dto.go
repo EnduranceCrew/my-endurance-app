@@ -26,6 +26,7 @@ type TokenOutput struct {
 	Name        string      `json:"name"`
 	Email       string      `json:"email"`
 	Role        string      `json:"role"`
+	ExpiresIn   int         `json:"expires_in"`
 }
 
 // ── Port de entrada (primary port) ──────────────────────────────────────────

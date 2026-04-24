@@ -34,6 +34,10 @@ type ListOutput struct {
 	Limit  int            `json:"limit"`
 }
 
+type BulkResolveInput struct {
+	IDs []uuid.UUID `json:"ids" binding:"required,min=1"`
+}
+
 func toOutput(a *domainAlert.Alert) *AlertOutput {
 	return &AlertOutput{
 		ID:         a.ID,
@@ -53,5 +57,6 @@ type UseCase interface {
 	GetByLabID(labID uuid.UUID, onlyOpen bool) ([]*AlertOutput, error)
 	Create(input CreateInput) (*AlertOutput, error)
 	Resolve(id uuid.UUID) error
+	BulkResolve(input BulkResolveInput) (int64, error)
 	Delete(id uuid.UUID) error
 }

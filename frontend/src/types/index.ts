@@ -10,6 +10,7 @@ export interface User {
   role: Role
   active: boolean
   created_at: string
+  updated_at: string
 }
 
 export type LabStatus = 'active' | 'inactive' | 'maintenance'
@@ -93,6 +94,7 @@ export interface AuthToken {
   name: string
   email: string
   role: Role
+  expires_in: number
 }
 
 export interface DashboardStats {

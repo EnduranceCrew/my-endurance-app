@@ -15,9 +15,10 @@ var (
 	ErrForbidden          = errors.New("acesso negado")
 	ErrInvalidCPF         = errors.New("CPF inválido")
 	ErrInvalidEmail       = errors.New("e-mail inválido")
-	ErrWeakPassword       = errors.New("senha muito fraca")
+	ErrWeakPassword       = errors.New("senha fraca: use ao menos 8 caracteres, uma maiúscula, um número e um especial")
 	ErrInactiveUser       = errors.New("usuário inativo")
 	ErrInvalidCredentials = errors.New("e-mail ou senha incorretos")
+	ErrSelfRoleChange     = errors.New("não é possível alterar o próprio papel")
 )
 
 // ── AppError: erro com código HTTP + mensagem legível ────────────────────────

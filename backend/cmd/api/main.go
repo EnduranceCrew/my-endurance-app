@@ -2,10 +2,16 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"log/slog"
 
 	"endurance/config"
 	appAlert "endurance/internal/application/alert"
@@ -24,6 +30,10 @@ func main() {
 	// ── 1. Configuração ──────────────────────────────────────────────────────
 	config.Load()
 	gin.SetMode(config.App.GinMode)
+
+	if config.App.JWTSecret == "secret_dev_only" {
+		slog.Warn("⚠️  JWT_SECRET está usando valor padrão inseguro! Defina um segredo forte em produção.")
+	}
 
 	// ── 2. Banco de dados ────────────────────────────────────────────────────
 	config.ConnectDB()
@@ -64,11 +74,31 @@ func main() {
 	router := httpInfra.NewRouter(handlers, jwtSvc)
 
 	port := ":" + config.App.Port
-	log.Printf("🚀 Endurance rodando em http://localhost%s", port)
-	if err := router.Run(port); err != nil {
-		log.Fatalf("falha ao iniciar servidor: %v", err)
-		os.Exit(1)
+	slog.Info("🚀 Endurance rodando", "addr", "http://localhost"+port)
+
+	srv := &http.Server{
+		Addr:    port,
+		Handler: router,
 	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("falha ao iniciar servidor", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("desligando servidor graciosamente...")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("erro ao desligar servidor", "error", err)
+	}
+	slog.Info("servidor encerrado")
 }
 
 // seedAdmin cria o administrador padrão se não existir nenhum usuário.

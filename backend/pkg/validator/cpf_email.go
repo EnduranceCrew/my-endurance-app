@@ -7,7 +7,13 @@ import (
 	"strings"
 )
 
-var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+var (
+	emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+	hasUpper   = regexp.MustCompile(`[A-Z]`)
+	hasLower   = regexp.MustCompile(`[a-z]`)
+	hasNumber  = regexp.MustCompile(`[0-9]`)
+	hasSpecial = regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]`)
+)
 
 // IsValidEmail retorna true se o e-mail tiver formato válido.
 func IsValidEmail(email string) bool {
@@ -74,4 +80,14 @@ func validDigit(cpf string, pos int) bool {
 	}
 	expected, _ := strconv.Atoi(string(cpf[pos]))
 	return remainder == expected
+}
+
+// IsStrongPassword returns true if password has at least 8 chars,
+// one uppercase, one lowercase, one digit and one special character.
+func IsStrongPassword(password string) bool {
+	return len(password) >= 8 &&
+		hasUpper.MatchString(password) &&
+		hasLower.MatchString(password) &&
+		hasNumber.MatchString(password) &&
+		hasSpecial.MatchString(password)
 }

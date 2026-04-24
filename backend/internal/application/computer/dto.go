@@ -78,8 +78,14 @@ func toOutput(c *domainComputer.Computer) *ComputerOutput {
 
 // ── Port de entrada ──────────────────────────────────────────────────────────
 
+type FilterInput struct {
+	Page   int    `form:"page,default=1"`
+	Limit  int    `form:"limit,default=20"`
+	Status string `form:"status"`
+}
+
 type UseCase interface {
-	GetAll(page, limit int) (*ListOutput, error)
+	GetAll(page, limit int, statusFilter string) (*ListOutput, error)
 	GetByLabID(labID uuid.UUID) ([]*ComputerOutput, error)
 	GetByID(id uuid.UUID) (*ComputerOutput, error)
 	Create(input CreateInput) (*ComputerOutput, error)

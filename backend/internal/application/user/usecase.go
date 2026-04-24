@@ -3,9 +3,10 @@ package appuser
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
-	"endurance/internal/domain/user"
+	domainUser "endurance/internal/domain/user"
 	"endurance/pkg/apperrors"
 )
 
@@ -15,11 +16,11 @@ type HashService interface {
 }
 
 type useCaseImpl struct {
-	repo    user.Repository
+	repo    domainUser.Repository
 	hashSvc HashService
 }
 
-func NewUseCase(repo user.Repository, hash HashService) UseCase {
+func NewUseCase(repo domainUser.Repository, hash HashService) UseCase {
 	return &useCaseImpl{repo: repo, hashSvc: hash}
 }
 
@@ -47,6 +48,27 @@ func (uc *useCaseImpl) GetByID(id uuid.UUID) (*UserOutput, error) {
 		return nil, apperrors.NotFound(apperrors.ErrNotFound)
 	}
 
+	return toOutput(u), nil
+}
+
+func (uc *useCaseImpl) GetMe(id uuid.UUID) (*UserOutput, error) {
+	return uc.GetByID(id)
+}
+
+func (uc *useCaseImpl) ChangeRole(id uuid.UUID, input ChangeRoleInput, requestorID uuid.UUID) (*UserOutput, error) {
+	if id == requestorID {
+		return nil, apperrors.BadRequest(apperrors.ErrSelfRoleChange)
+	}
+	ctx := context.Background()
+	u, err := uc.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, apperrors.NotFound(apperrors.ErrNotFound)
+	}
+	u.Role = domainUser.Role(input.Role)
+	u.UpdatedAt = time.Now().UTC()
+	if err := uc.repo.UpdateRole(ctx, id, u.Role); err != nil {
+		return nil, apperrors.Internal(err)
+	}
 	return toOutput(u), nil
 }
 

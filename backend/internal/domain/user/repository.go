@@ -19,4 +19,5 @@ type Repository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
 	ExistsByCPF(ctx context.Context, cpf string) (bool, error)
+	UpdateRole(ctx context.Context, id uuid.UUID, role Role) error
 }

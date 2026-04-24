@@ -136,3 +136,10 @@ func (r *UserRepository) ExistsByCPF(_ context.Context, cpf string) (bool, error
 	err := r.db().Model(&gormUser{}).Where("cpf = ?", cpf).Count(&count).Error
 	return count > 0, err
 }
+
+func (r *UserRepository) UpdateRole(_ context.Context, id uuid.UUID, role domainUser.Role) error {
+	return r.db().Model(&gormUser{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"role":       string(role),
+		"updated_at": time.Now().UTC(),
+	}).Error
+}

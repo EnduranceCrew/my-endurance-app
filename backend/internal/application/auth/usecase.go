@@ -3,7 +3,9 @@ package auth
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"endurance/config"
 	"endurance/internal/domain/user"
 	"endurance/pkg/apperrors"
 	"endurance/pkg/validator"
@@ -61,11 +63,15 @@ func (uc *useCaseImpl) Login(input LoginInput) (*TokenOutput, error) {
 		Name:        u.Name,
 		Email:       u.Email,
 		Role:        string(u.Role),
+		ExpiresIn:   config.App.JWTExpirationHours * 3600,
 	}, nil
 }
 
 func (uc *useCaseImpl) Register(input RegisterInput) (*TokenOutput, error) {
 	ctx := context.Background()
+
+	input.Name = strings.TrimSpace(input.Name)
+	input.Email = strings.TrimSpace(strings.ToLower(input.Email))
 
 	// Validações de domínio
 	if !validator.IsValidEmail(input.Email) {
@@ -73,6 +79,9 @@ func (uc *useCaseImpl) Register(input RegisterInput) (*TokenOutput, error) {
 	}
 	if !validator.IsValidCPF(input.CPF) {
 		return nil, apperrors.BadRequest(apperrors.ErrInvalidCPF)
+	}
+	if !validator.IsStrongPassword(input.Password) {
+		return nil, apperrors.BadRequest(apperrors.ErrWeakPassword)
 	}
 
 	emailExists, _ := uc.userRepo.ExistsByEmail(ctx, input.Email)
@@ -114,5 +123,6 @@ func (uc *useCaseImpl) Register(input RegisterInput) (*TokenOutput, error) {
 		Name:        newUser.Name,
 		Email:       newUser.Email,
 		Role:        string(newUser.Role),
+		ExpiresIn:   config.App.JWTExpirationHours * 3600,
 	}, nil
 }

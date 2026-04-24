@@ -49,13 +49,28 @@ func toDomainComputer(m *gormComputer) *domainComputer.Computer {
 	}
 }
 
+func fromDomainComputer(c *domainComputer.Computer) *gormComputer {
+	return &gormComputer{
+		ID:         c.ID,
+		LabID:      c.LabID,
+		Hostname:   c.Hostname,
+		IPAddress:  c.IPAddress,
+		MACAddress: c.MACAddress,
+		Status:     string(c.Status),
+		OS:         c.OS,
+		CPU:        c.CPU,
+		RAM:        c.RAM,
+		Storage:    c.Storage,
+	}
+}
+
 type ComputerRepository struct{}
 
 func NewComputerRepository() *ComputerRepository { return &ComputerRepository{} }
 func (r *ComputerRepository) db() *gorm.DB        { return config.DB }
 
 func (r *ComputerRepository) Create(_ context.Context, c *domainComputer.Computer) error {
-	return r.db().Create(c).Error
+	return r.db().Create(fromDomainComputer(c)).Error
 }
 
 func (r *ComputerRepository) FindByID(_ context.Context, id uuid.UUID) (*domainComputer.Computer, error) {

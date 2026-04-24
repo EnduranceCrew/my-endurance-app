@@ -93,3 +93,39 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 	}
 	response.Message(c, "senha alterada com sucesso")
 }
+
+func (h *UserHandler) GetMe(c *gin.Context) {
+	idStr, _ := c.Get("userID")
+	id, err := uuid.Parse(idStr.(string))
+	if err != nil {
+		response.BadRequest(c, "id inválido")
+		return
+	}
+	out, err := h.useCase.GetMe(id)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+	response.OK(c, out)
+}
+
+func (h *UserHandler) ChangeRole(c *gin.Context) {
+	targetID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "id inválido")
+		return
+	}
+	requestorIDStr, _ := c.Get("userID")
+	requestorID, _ := uuid.Parse(requestorIDStr.(string))
+	var input appUser.ChangeRoleInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	out, err := h.useCase.ChangeRole(targetID, input, requestorID)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+	response.OK(c, out)
+}

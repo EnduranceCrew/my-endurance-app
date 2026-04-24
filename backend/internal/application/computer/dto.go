@@ -1,6 +1,7 @@
 package appcomputer
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -85,11 +86,11 @@ type FilterInput struct {
 }
 
 type UseCase interface {
-	GetAll(page, limit int, statusFilter string) (*ListOutput, error)
-	GetByLabID(labID uuid.UUID) ([]*ComputerOutput, error)
-	GetByID(id uuid.UUID) (*ComputerOutput, error)
-	Create(input CreateInput) (*ComputerOutput, error)
-	Update(id uuid.UUID, input UpdateInput) (*ComputerOutput, error)
-	UpdateStatus(id uuid.UUID, input UpdateStatusInput) error
-	Delete(id uuid.UUID) error
+	GetAll(ctx context.Context, page, limit int, statusFilter string) (*ListOutput, error)
+	GetByLabID(ctx context.Context, labID uuid.UUID) ([]*ComputerOutput, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*ComputerOutput, error)
+	Create(ctx context.Context, input CreateInput) (*ComputerOutput, error)
+	Update(ctx context.Context, id uuid.UUID, input UpdateInput) (*ComputerOutput, error)
+	UpdateStatus(ctx context.Context, id uuid.UUID, input UpdateStatusInput) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }

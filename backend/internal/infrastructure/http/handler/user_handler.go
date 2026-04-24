@@ -21,7 +21,7 @@ func (h *UserHandler) GetAll(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	out, err := h.useCase.GetAll(input.Page, input.Limit)
+	out, err := h.useCase.GetAll(c.Request.Context(), input.Page, input.Limit)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -35,7 +35,7 @@ func (h *UserHandler) GetByID(c *gin.Context) {
 		response.BadRequest(c, "id inválido")
 		return
 	}
-	out, err := h.useCase.GetByID(id)
+	out, err := h.useCase.GetByID(c.Request.Context(), id)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -54,7 +54,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	out, err := h.useCase.Update(id, input)
+	out, err := h.useCase.Update(c.Request.Context(), id, input)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -68,7 +68,7 @@ func (h *UserHandler) Delete(c *gin.Context) {
 		response.BadRequest(c, "id inválido")
 		return
 	}
-	if err := h.useCase.Delete(id); err != nil {
+	if err := h.useCase.Delete(c.Request.Context(), id); err != nil {
 		handleError(c, err)
 		return
 	}
@@ -87,7 +87,7 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	if err := h.useCase.ChangePassword(id, input); err != nil {
+	if err := h.useCase.ChangePassword(c.Request.Context(), id, input); err != nil {
 		handleError(c, err)
 		return
 	}
@@ -101,7 +101,7 @@ func (h *UserHandler) GetMe(c *gin.Context) {
 		response.BadRequest(c, "id inválido")
 		return
 	}
-	out, err := h.useCase.GetMe(id)
+	out, err := h.useCase.GetMe(c.Request.Context(), id)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -122,7 +122,7 @@ func (h *UserHandler) ChangeRole(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	out, err := h.useCase.ChangeRole(targetID, input, requestorID)
+	out, err := h.useCase.ChangeRole(c.Request.Context(), targetID, input, requestorID)
 	if err != nil {
 		handleError(c, err)
 		return

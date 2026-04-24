@@ -60,15 +60,15 @@ type UserRepository struct{}
 
 func NewUserRepository() *UserRepository { return &UserRepository{} }
 
-func (r *UserRepository) db() *gorm.DB { return config.DB }
+func (r *UserRepository) db(ctx context.Context) *gorm.DB { return config.DB.WithContext(ctx) }
 
-func (r *UserRepository) Create(_ context.Context, u *domainUser.User) error {
-	return r.db().Create(fromDomainUser(u)).Error
+func (r *UserRepository) Create(ctx context.Context, u *domainUser.User) error {
+	return r.db(ctx).Create(fromDomainUser(u)).Error
 }
 
-func (r *UserRepository) FindByID(_ context.Context, id uuid.UUID) (*domainUser.User, error) {
+func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*domainUser.User, error) {
 	var m gormUser
-	if err := r.db().First(&m, "id = ?", id).Error; err != nil {
+	if err := r.db(ctx).First(&m, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domainUser.ErrNotFound
 		}
@@ -77,30 +77,36 @@ func (r *UserRepository) FindByID(_ context.Context, id uuid.UUID) (*domainUser.
 	return toDomainUser(&m), nil
 }
 
-func (r *UserRepository) FindByEmail(_ context.Context, email string) (*domainUser.User, error) {
+func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*domainUser.User, error) {
 	var m gormUser
-	if err := r.db().Where("email = ?", email).First(&m).Error; err != nil {
+	if err := r.db(ctx).Where("email = ?", email).First(&m).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domainUser.ErrNotFound
+		}
 		return nil, err
 	}
 	return toDomainUser(&m), nil
 }
 
-func (r *UserRepository) FindByCPF(_ context.Context, cpf string) (*domainUser.User, error) {
+func (r *UserRepository) FindByCPF(ctx context.Context, cpf string) (*domainUser.User, error) {
 	var m gormUser
-	if err := r.db().Where("cpf = ?", cpf).First(&m).Error; err != nil {
+	if err := r.db(ctx).Where("cpf = ?", cpf).First(&m).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domainUser.ErrNotFound
+		}
 		return nil, err
 	}
 	return toDomainUser(&m), nil
 }
 
-func (r *UserRepository) FindAll(_ context.Context, page, limit int) ([]*domainUser.User, int64, error) {
+func (r *UserRepository) FindAll(ctx context.Context, page, limit int) ([]*domainUser.User, int64, error) {
 	var models []gormUser
 	var total int64
 
 	offset := (page - 1) * limit
-	r.db().Model(&gormUser{}).Count(&total)
+	r.db(ctx).Model(&gormUser{}).Count(&total)
 
-	if err := r.db().Offset(offset).Limit(limit).Order("created_at DESC").Find(&models).Error; err != nil {
+	if err := r.db(ctx).Offset(offset).Limit(limit).Order("created_at DESC").Find(&models).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -111,8 +117,8 @@ func (r *UserRepository) FindAll(_ context.Context, page, limit int) ([]*domainU
 	return users, total, nil
 }
 
-func (r *UserRepository) Update(_ context.Context, u *domainUser.User) error {
-	return r.db().Model(&gormUser{}).Where("id = ?", u.ID).Updates(map[string]interface{}{
+func (r *UserRepository) Update(ctx context.Context, u *domainUser.User) error {
+	return r.db(ctx).Model(&gormUser{}).Where("id = ?", u.ID).Updates(map[string]interface{}{
 		"name":       u.Name,
 		"email":      u.Email,
 		"password":   u.Password,
@@ -121,24 +127,24 @@ func (r *UserRepository) Update(_ context.Context, u *domainUser.User) error {
 	}).Error
 }
 
-func (r *UserRepository) Delete(_ context.Context, id uuid.UUID) error {
-	return r.db().Delete(&gormUser{}, "id = ?", id).Error
+func (r *UserRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.db(ctx).Delete(&gormUser{}, "id = ?", id).Error
 }
 
-func (r *UserRepository) ExistsByEmail(_ context.Context, email string) (bool, error) {
+func (r *UserRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
 	var count int64
-	err := r.db().Model(&gormUser{}).Where("email = ?", email).Count(&count).Error
+	err := r.db(ctx).Model(&gormUser{}).Where("email = ?", email).Count(&count).Error
 	return count > 0, err
 }
 
-func (r *UserRepository) ExistsByCPF(_ context.Context, cpf string) (bool, error) {
+func (r *UserRepository) ExistsByCPF(ctx context.Context, cpf string) (bool, error) {
 	var count int64
-	err := r.db().Model(&gormUser{}).Where("cpf = ?", cpf).Count(&count).Error
+	err := r.db(ctx).Model(&gormUser{}).Where("cpf = ?", cpf).Count(&count).Error
 	return count > 0, err
 }
 
-func (r *UserRepository) UpdateRole(_ context.Context, id uuid.UUID, role domainUser.Role) error {
-	return r.db().Model(&gormUser{}).Where("id = ?", id).Updates(map[string]interface{}{
+func (r *UserRepository) UpdateRole(ctx context.Context, id uuid.UUID, role domainUser.Role) error {
+	return r.db(ctx).Model(&gormUser{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"role":       string(role),
 		"updated_at": time.Now().UTC(),
 	}).Error

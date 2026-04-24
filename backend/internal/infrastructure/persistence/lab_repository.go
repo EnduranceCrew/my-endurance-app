@@ -56,15 +56,15 @@ func fromDomainLab(l *domainLab.Lab) *gormLab {
 type LabRepository struct{}
 
 func NewLabRepository() *LabRepository { return &LabRepository{} }
-func (r *LabRepository) db() *gorm.DB  { return config.DB }
+func (r *LabRepository) db(ctx context.Context) *gorm.DB  { return config.DB.WithContext(ctx) }
 
-func (r *LabRepository) Create(_ context.Context, l *domainLab.Lab) error {
-	return r.db().Create(fromDomainLab(l)).Error
+func (r *LabRepository) Create(ctx context.Context, l *domainLab.Lab) error {
+	return r.db(ctx).Create(fromDomainLab(l)).Error
 }
 
-func (r *LabRepository) FindByID(_ context.Context, id uuid.UUID) (*domainLab.Lab, error) {
+func (r *LabRepository) FindByID(ctx context.Context, id uuid.UUID) (*domainLab.Lab, error) {
 	var m gormLab
-	if err := r.db().First(&m, "id = ?", id).Error; err != nil {
+	if err := r.db(ctx).First(&m, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domainLab.ErrNotFound
 		}
@@ -73,14 +73,14 @@ func (r *LabRepository) FindByID(_ context.Context, id uuid.UUID) (*domainLab.La
 	return toDomainLab(&m), nil
 }
 
-func (r *LabRepository) FindAll(_ context.Context, page, limit int) ([]*domainLab.Lab, int64, error) {
+func (r *LabRepository) FindAll(ctx context.Context, page, limit int) ([]*domainLab.Lab, int64, error) {
 	var models []gormLab
 	var total int64
 
 	offset := (page - 1) * limit
-	r.db().Model(&gormLab{}).Count(&total)
+	r.db(ctx).Model(&gormLab{}).Count(&total)
 
-	if err := r.db().Offset(offset).Limit(limit).Order("created_at DESC").Find(&models).Error; err != nil {
+	if err := r.db(ctx).Offset(offset).Limit(limit).Order("created_at DESC").Find(&models).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -91,8 +91,8 @@ func (r *LabRepository) FindAll(_ context.Context, page, limit int) ([]*domainLa
 	return labs, total, nil
 }
 
-func (r *LabRepository) Update(_ context.Context, l *domainLab.Lab) error {
-	return r.db().Model(&gormLab{}).Where("id = ?", l.ID).Updates(map[string]interface{}{
+func (r *LabRepository) Update(ctx context.Context, l *domainLab.Lab) error {
+	return r.db(ctx).Model(&gormLab{}).Where("id = ?", l.ID).Updates(map[string]interface{}{
 		"name":           l.Name,
 		"location":       l.Location,
 		"capacity":       l.Capacity,
@@ -103,17 +103,17 @@ func (r *LabRepository) Update(_ context.Context, l *domainLab.Lab) error {
 	}).Error
 }
 
-func (r *LabRepository) Delete(_ context.Context, id uuid.UUID) error {
-	return r.db().Delete(&gormLab{}, "id = ?", id).Error
+func (r *LabRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.db(ctx).Delete(&gormLab{}, "id = ?", id).Error
 }
 
-func (r *LabRepository) CountByStatus(_ context.Context) (map[domainLab.Status]int64, error) {
+func (r *LabRepository) CountByStatus(ctx context.Context) (map[domainLab.Status]int64, error) {
 	type result struct {
 		Status string
 		Count  int64
 	}
 	var results []result
-	if err := r.db().Model(&gormLab{}).Select("status, count(*) as count").Group("status").Scan(&results).Error; err != nil {
+	if err := r.db(ctx).Model(&gormLab{}).Select("status, count(*) as count").Group("status").Scan(&results).Error; err != nil {
 		return nil, err
 	}
 	m := make(map[domainLab.Status]int64)

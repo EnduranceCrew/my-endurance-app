@@ -18,7 +18,7 @@ func NewComputerHandler(uc appComputer.UseCase) *ComputerHandler {
 func (h *ComputerHandler) GetAll(c *gin.Context) {
 	page, limit := paginationParams(c)
 	statusFilter := c.Query("status")
-	out, err := h.useCase.GetAll(page, limit, statusFilter)
+	out, err := h.useCase.GetAll(c.Request.Context(), page, limit, statusFilter)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -32,7 +32,7 @@ func (h *ComputerHandler) GetByLabID(c *gin.Context) {
 		response.BadRequest(c, "lab_id inválido")
 		return
 	}
-	out, err := h.useCase.GetByLabID(labID)
+	out, err := h.useCase.GetByLabID(c.Request.Context(), labID)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -46,7 +46,7 @@ func (h *ComputerHandler) GetByID(c *gin.Context) {
 		response.BadRequest(c, "id inválido")
 		return
 	}
-	out, err := h.useCase.GetByID(id)
+	out, err := h.useCase.GetByID(c.Request.Context(), id)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -60,7 +60,7 @@ func (h *ComputerHandler) Create(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	out, err := h.useCase.Create(input)
+	out, err := h.useCase.Create(c.Request.Context(), input)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -79,7 +79,7 @@ func (h *ComputerHandler) Update(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	out, err := h.useCase.Update(id, input)
+	out, err := h.useCase.Update(c.Request.Context(), id, input)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -98,7 +98,7 @@ func (h *ComputerHandler) UpdateStatus(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	if err := h.useCase.UpdateStatus(id, input); err != nil {
+	if err := h.useCase.UpdateStatus(c.Request.Context(), id, input); err != nil {
 		handleError(c, err)
 		return
 	}
@@ -111,7 +111,7 @@ func (h *ComputerHandler) Delete(c *gin.Context) {
 		response.BadRequest(c, "id inválido")
 		return
 	}
-	if err := h.useCase.Delete(id); err != nil {
+	if err := h.useCase.Delete(c.Request.Context(), id); err != nil {
 		handleError(c, err)
 		return
 	}

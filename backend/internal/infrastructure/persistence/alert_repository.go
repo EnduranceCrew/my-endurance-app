@@ -59,15 +59,15 @@ func fromDomainAlert(a *domainAlert.Alert) *gormAlert {
 type AlertRepository struct{}
 
 func NewAlertRepository() *AlertRepository { return &AlertRepository{} }
-func (r *AlertRepository) db() *gorm.DB    { return config.DB }
+func (r *AlertRepository) db(ctx context.Context) *gorm.DB { return config.DB.WithContext(ctx) }
 
-func (r *AlertRepository) Create(_ context.Context, a *domainAlert.Alert) error {
-	return r.db().Create(fromDomainAlert(a)).Error
+func (r *AlertRepository) Create(ctx context.Context, a *domainAlert.Alert) error {
+	return r.db(ctx).Create(fromDomainAlert(a)).Error
 }
 
-func (r *AlertRepository) BulkResolve(_ context.Context, ids []uuid.UUID) (int64, error) {
+func (r *AlertRepository) BulkResolve(ctx context.Context, ids []uuid.UUID) (int64, error) {
 	now := time.Now().UTC()
-	result := r.db().Model(&gormAlert{}).
+	result := r.db(ctx).Model(&gormAlert{}).
 		Where("id IN ? AND resolved = false", ids).
 		Updates(map[string]interface{}{
 			"resolved":    true,
@@ -77,9 +77,9 @@ func (r *AlertRepository) BulkResolve(_ context.Context, ids []uuid.UUID) (int64
 	return result.RowsAffected, result.Error
 }
 
-func (r *AlertRepository) FindByID(_ context.Context, id uuid.UUID) (*domainAlert.Alert, error) {
+func (r *AlertRepository) FindByID(ctx context.Context, id uuid.UUID) (*domainAlert.Alert, error) {
 	var m gormAlert
-	if err := r.db().First(&m, "id = ?", id).Error; err != nil {
+	if err := r.db(ctx).First(&m, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domainAlert.ErrNotFound
 		}
@@ -88,8 +88,8 @@ func (r *AlertRepository) FindByID(_ context.Context, id uuid.UUID) (*domainAler
 	return toDomainAlert(&m), nil
 }
 
-func (r *AlertRepository) FindByLabID(_ context.Context, labID uuid.UUID, onlyOpen bool) ([]*domainAlert.Alert, error) {
-	q := r.db().Where("lab_id = ?", labID)
+func (r *AlertRepository) FindByLabID(ctx context.Context, labID uuid.UUID, onlyOpen bool) ([]*domainAlert.Alert, error) {
+	q := r.db(ctx).Where("lab_id = ?", labID)
 	if onlyOpen {
 		q = q.Where("resolved = false")
 	}
@@ -104,8 +104,8 @@ func (r *AlertRepository) FindByLabID(_ context.Context, labID uuid.UUID, onlyOp
 	return out, nil
 }
 
-func (r *AlertRepository) FindAll(_ context.Context, onlyOpen bool, page, limit int) ([]*domainAlert.Alert, int64, error) {
-	q := r.db().Model(&gormAlert{})
+func (r *AlertRepository) FindAll(ctx context.Context, onlyOpen bool, page, limit int) ([]*domainAlert.Alert, int64, error) {
+	q := r.db(ctx).Model(&gormAlert{})
 	if onlyOpen {
 		q = q.Where("resolved = false")
 	}
@@ -123,31 +123,31 @@ func (r *AlertRepository) FindAll(_ context.Context, onlyOpen bool, page, limit 
 	return out, total, nil
 }
 
-func (r *AlertRepository) Resolve(_ context.Context, id uuid.UUID) error {
+func (r *AlertRepository) Resolve(ctx context.Context, id uuid.UUID) error {
 	now := time.Now().UTC()
-	return r.db().Model(&gormAlert{}).Where("id = ?", id).Updates(map[string]interface{}{
+	return r.db(ctx).Model(&gormAlert{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"resolved":    true,
 		"resolved_at": now,
 		"updated_at":  now,
 	}).Error
 }
 
-func (r *AlertRepository) Delete(_ context.Context, id uuid.UUID) error {
-	return r.db().Delete(&gormAlert{}, "id = ?", id).Error
+func (r *AlertRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.db(ctx).Delete(&gormAlert{}, "id = ?", id).Error
 }
 
-func (r *AlertRepository) CountUnresolved(_ context.Context) (int64, error) {
+func (r *AlertRepository) CountUnresolved(ctx context.Context) (int64, error) {
 	var count int64
-	return count, r.db().Model(&gormAlert{}).Where("resolved = false").Count(&count).Error
+	return count, r.db(ctx).Model(&gormAlert{}).Where("resolved = false").Count(&count).Error
 }
 
-func (r *AlertRepository) CountBySeverity(_ context.Context) (map[domainAlert.Severity]int64, error) {
+func (r *AlertRepository) CountBySeverity(ctx context.Context) (map[domainAlert.Severity]int64, error) {
 	type result struct {
 		Severity string
 		Count    int64
 	}
 	var results []result
-	if err := r.db().Model(&gormAlert{}).Where("resolved = false").
+	if err := r.db(ctx).Model(&gormAlert{}).Where("resolved = false").
 		Select("severity, count(*) as count").Group("severity").Scan(&results).Error; err != nil {
 		return nil, err
 	}

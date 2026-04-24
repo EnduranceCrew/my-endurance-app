@@ -28,7 +28,7 @@ type StatsOutput struct {
 // ── Port de entrada ──────────────────────────────────────────────────────────
 
 type UseCase interface {
-	GetStats() (*StatsOutput, error)
+	GetStats(ctx context.Context) (*StatsOutput, error)
 }
 
 // ── Implementação ────────────────────────────────────────────────────────────
@@ -54,9 +54,7 @@ func NewUseCase(
 	}
 }
 
-func (uc *useCaseImpl) GetStats() (*StatsOutput, error) {
-	ctx := context.Background()
-
+func (uc *useCaseImpl) GetStats(ctx context.Context) (*StatsOutput, error) {
 	labStatus, err := uc.labRepo.CountByStatus(ctx)
 	if err != nil {
 		return nil, apperrors.Internal(err)

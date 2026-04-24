@@ -2,22 +2,22 @@ package appcomputer
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
-	"endurance/internal/domain/computer"
+	domainComputer "endurance/internal/domain/computer"
 	"endurance/pkg/apperrors"
 )
 
 type useCaseImpl struct {
-	repo computer.Repository
+	repo domainComputer.Repository
 }
 
-func NewUseCase(repo computer.Repository) UseCase {
+func NewUseCase(repo domainComputer.Repository) UseCase {
 	return &useCaseImpl{repo: repo}
 }
 
-func (uc *useCaseImpl) GetAll(page, limit int, statusFilter string) (*ListOutput, error) {
-	ctx := context.Background()
+func (uc *useCaseImpl) GetAll(ctx context.Context, page, limit int, statusFilter string) (*ListOutput, error) {
 	items, total, err := uc.repo.FindAll(ctx, page, limit, statusFilter)
 	if err != nil {
 		return nil, apperrors.Internal(err)
@@ -29,8 +29,7 @@ func (uc *useCaseImpl) GetAll(page, limit int, statusFilter string) (*ListOutput
 	return &ListOutput{Computers: out, Total: total, Page: page, Limit: limit}, nil
 }
 
-func (uc *useCaseImpl) GetByLabID(labID uuid.UUID) ([]*ComputerOutput, error) {
-	ctx := context.Background()
+func (uc *useCaseImpl) GetByLabID(ctx context.Context, labID uuid.UUID) ([]*ComputerOutput, error) {
 	items, err := uc.repo.FindByLabID(ctx, labID)
 	if err != nil {
 		return nil, apperrors.Internal(err)
@@ -42,18 +41,19 @@ func (uc *useCaseImpl) GetByLabID(labID uuid.UUID) ([]*ComputerOutput, error) {
 	return out, nil
 }
 
-func (uc *useCaseImpl) GetByID(id uuid.UUID) (*ComputerOutput, error) {
-	ctx := context.Background()
+func (uc *useCaseImpl) GetByID(ctx context.Context, id uuid.UUID) (*ComputerOutput, error) {
 	c, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainComputer.ErrNotFound) {
+			return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return nil, apperrors.Internal(err)
 	}
 	return toOutput(c), nil
 }
 
-func (uc *useCaseImpl) Create(input CreateInput) (*ComputerOutput, error) {
-	ctx := context.Background()
-	c := computer.New(input.LabID, input.Hostname, input.IPAddress, input.MACAddress,
+func (uc *useCaseImpl) Create(ctx context.Context, input CreateInput) (*ComputerOutput, error) {
+	c := domainComputer.New(input.LabID, input.Hostname, input.IPAddress, input.MACAddress,
 		input.OS, input.CPU, input.RAM, input.Storage)
 	if err := uc.repo.Create(ctx, c); err != nil {
 		return nil, apperrors.Internal(err)
@@ -61,11 +61,13 @@ func (uc *useCaseImpl) Create(input CreateInput) (*ComputerOutput, error) {
 	return toOutput(c), nil
 }
 
-func (uc *useCaseImpl) Update(id uuid.UUID, input UpdateInput) (*ComputerOutput, error) {
-	ctx := context.Background()
+func (uc *useCaseImpl) Update(ctx context.Context, id uuid.UUID, input UpdateInput) (*ComputerOutput, error) {
 	c, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainComputer.ErrNotFound) {
+			return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return nil, apperrors.Internal(err)
 	}
 	c.Hostname = input.Hostname
 	c.IPAddress = input.IPAddress
@@ -81,18 +83,22 @@ func (uc *useCaseImpl) Update(id uuid.UUID, input UpdateInput) (*ComputerOutput,
 	return toOutput(c), nil
 }
 
-func (uc *useCaseImpl) UpdateStatus(id uuid.UUID, input UpdateStatusInput) error {
-	ctx := context.Background()
+func (uc *useCaseImpl) UpdateStatus(ctx context.Context, id uuid.UUID, input UpdateStatusInput) error {
 	if _, err := uc.repo.FindByID(ctx, id); err != nil {
-		return apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainComputer.ErrNotFound) {
+			return apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return apperrors.Internal(err)
 	}
 	return uc.repo.UpdateStatus(ctx, id, input.Status)
 }
 
-func (uc *useCaseImpl) Delete(id uuid.UUID) error {
-	ctx := context.Background()
+func (uc *useCaseImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	if _, err := uc.repo.FindByID(ctx, id); err != nil {
-		return apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainComputer.ErrNotFound) {
+			return apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return apperrors.Internal(err)
 	}
 	return uc.repo.Delete(ctx, id)
 }

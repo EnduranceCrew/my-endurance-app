@@ -1,6 +1,7 @@
 package appalert
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -53,10 +54,10 @@ func toOutput(a *domainAlert.Alert) *AlertOutput {
 }
 
 type UseCase interface {
-	GetAll(onlyOpen bool, page, limit int) (*ListOutput, error)
-	GetByLabID(labID uuid.UUID, onlyOpen bool) ([]*AlertOutput, error)
-	Create(input CreateInput) (*AlertOutput, error)
-	Resolve(id uuid.UUID) error
-	BulkResolve(input BulkResolveInput) (int64, error)
-	Delete(id uuid.UUID) error
+	GetAll(ctx context.Context, onlyOpen bool, page, limit int) (*ListOutput, error)
+	GetByLabID(ctx context.Context, labID uuid.UUID, onlyOpen bool) ([]*AlertOutput, error)
+	Create(ctx context.Context, input CreateInput) (*AlertOutput, error)
+	Resolve(ctx context.Context, id uuid.UUID) error
+	BulkResolve(ctx context.Context, input BulkResolveInput) (int64, error)
+	Delete(ctx context.Context, id uuid.UUID) error
 }

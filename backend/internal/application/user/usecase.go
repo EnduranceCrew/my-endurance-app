@@ -2,6 +2,7 @@ package appuser
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -24,9 +25,7 @@ func NewUseCase(repo domainUser.Repository, hash HashService) UseCase {
 	return &useCaseImpl{repo: repo, hashSvc: hash}
 }
 
-func (uc *useCaseImpl) GetAll(page, limit int) (*ListOutput, error) {
-	ctx := context.Background()
-
+func (uc *useCaseImpl) GetAll(ctx context.Context, page, limit int) (*ListOutput, error) {
 	users, total, err := uc.repo.FindAll(ctx, page, limit)
 	if err != nil {
 		return nil, apperrors.Internal(err)
@@ -40,29 +39,32 @@ func (uc *useCaseImpl) GetAll(page, limit int) (*ListOutput, error) {
 	return &ListOutput{Users: out, Total: total, Page: page, Limit: limit}, nil
 }
 
-func (uc *useCaseImpl) GetByID(id uuid.UUID) (*UserOutput, error) {
-	ctx := context.Background()
-
+func (uc *useCaseImpl) GetByID(ctx context.Context, id uuid.UUID) (*UserOutput, error) {
 	u, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainUser.ErrNotFound) {
+			return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return nil, apperrors.Internal(err)
 	}
 
 	return toOutput(u), nil
 }
 
-func (uc *useCaseImpl) GetMe(id uuid.UUID) (*UserOutput, error) {
-	return uc.GetByID(id)
+func (uc *useCaseImpl) GetMe(ctx context.Context, id uuid.UUID) (*UserOutput, error) {
+	return uc.GetByID(ctx, id)
 }
 
-func (uc *useCaseImpl) ChangeRole(id uuid.UUID, input ChangeRoleInput, requestorID uuid.UUID) (*UserOutput, error) {
+func (uc *useCaseImpl) ChangeRole(ctx context.Context, id uuid.UUID, input ChangeRoleInput, requestorID uuid.UUID) (*UserOutput, error) {
 	if id == requestorID {
 		return nil, apperrors.BadRequest(apperrors.ErrSelfRoleChange)
 	}
-	ctx := context.Background()
 	u, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainUser.ErrNotFound) {
+			return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return nil, apperrors.Internal(err)
 	}
 	u.Role = domainUser.Role(input.Role)
 	u.UpdatedAt = time.Now().UTC()
@@ -72,12 +74,13 @@ func (uc *useCaseImpl) ChangeRole(id uuid.UUID, input ChangeRoleInput, requestor
 	return toOutput(u), nil
 }
 
-func (uc *useCaseImpl) Update(id uuid.UUID, input UpdateInput) (*UserOutput, error) {
-	ctx := context.Background()
-
+func (uc *useCaseImpl) Update(ctx context.Context, id uuid.UUID, input UpdateInput) (*UserOutput, error) {
 	u, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainUser.ErrNotFound) {
+			return nil, apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return nil, apperrors.Internal(err)
 	}
 
 	u.UpdateName(input.Name)
@@ -96,11 +99,12 @@ func (uc *useCaseImpl) Update(id uuid.UUID, input UpdateInput) (*UserOutput, err
 	return toOutput(u), nil
 }
 
-func (uc *useCaseImpl) Delete(id uuid.UUID) error {
-	ctx := context.Background()
-
+func (uc *useCaseImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	if _, err := uc.repo.FindByID(ctx, id); err != nil {
-		return apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainUser.ErrNotFound) {
+			return apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return apperrors.Internal(err)
 	}
 
 	if err := uc.repo.Delete(ctx, id); err != nil {
@@ -110,12 +114,13 @@ func (uc *useCaseImpl) Delete(id uuid.UUID) error {
 	return nil
 }
 
-func (uc *useCaseImpl) ChangePassword(id uuid.UUID, input ChangePasswordInput) error {
-	ctx := context.Background()
-
+func (uc *useCaseImpl) ChangePassword(ctx context.Context, id uuid.UUID, input ChangePasswordInput) error {
 	u, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
-		return apperrors.NotFound(apperrors.ErrNotFound)
+		if errors.Is(err, domainUser.ErrNotFound) {
+			return apperrors.NotFound(apperrors.ErrNotFound)
+		}
+		return apperrors.Internal(err)
 	}
 
 	if err := uc.hashSvc.Compare(u.Password, input.CurrentPassword); err != nil {

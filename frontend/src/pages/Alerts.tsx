@@ -1,26 +1,23 @@
-import { useEffect, useState } from 'react'
-import { BellRing, Loader2, CheckCheck, CheckCircle } from 'lucide-react'
+import { useState } from 'react'
+import { BellRing, CheckCheck, CheckCircle } from 'lucide-react'
 import { alertService } from '@/services/endurance'
 import type { Alert } from '@/types'
 import AlertBadge from '@/components/AlertBadge'
+import PageState from '@/components/PageState'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAsync } from '@/hooks/useAsync'
 import toast from 'react-hot-toast'
 
 export default function Alerts() {
   const { isAdmin } = useAuth()
-  const [alerts, setAlerts] = useState<Alert[]>([])
-  const [loading, setLoading] = useState(true)
   const [onlyOpen, setOnlyOpen] = useState(true)
   const [bulkResolving, setBulkResolving] = useState(false)
 
-  const fetchAlerts = () => {
-    setLoading(true)
-    alertService.getAll(onlyOpen)
-      .then((d) => setAlerts(d.alerts))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { fetchAlerts() }, [onlyOpen])
+  const { data, loading, error, refetch } = useAsync(
+    () => alertService.getAll(onlyOpen).then((d) => d.alerts),
+    [onlyOpen]
+  )
+  const alerts: Alert[] = data ?? []
 
   const openAlertIds = alerts.filter((a) => !a.resolved).map((a) => a.id)
 
@@ -31,7 +28,7 @@ export default function Alerts() {
     try {
       const result = await alertService.bulkResolve(openAlertIds)
       toast.success(`${result.resolved} alerta(s) resolvido(s)!`)
-      fetchAlerts()
+      refetch()
     } catch { /* handled */ } finally { setBulkResolving(false) }
   }
 
@@ -70,7 +67,9 @@ export default function Alerts() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>
+        <PageState loading={loading} error={error}><></></PageState>
+      ) : error ? (
+        <PageState loading={false} error={error}><></></PageState>
       ) : alerts.length === 0 ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-600">
           <BellRing className="w-10 h-10 mx-auto mb-3 opacity-30" />
@@ -79,7 +78,7 @@ export default function Alerts() {
       ) : (
         <div className="space-y-2">
           {alerts.map((a) => (
-            <AlertBadge key={a.id} alert={a} onResolved={fetchAlerts} />
+            <AlertBadge key={a.id} alert={a} onResolved={refetch} />
           ))}
         </div>
       )}

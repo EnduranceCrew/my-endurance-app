@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Plus, Search, Loader2 } from 'lucide-react'
 import { labService } from '@/services/endurance'
 import type { Lab, LabStatus } from '@/types'
 import LabCard from '@/components/LabCard'
+import PageState from '@/components/PageState'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAsync } from '@/hooks/useAsync'
 import toast from 'react-hot-toast'
 
 const emptyForm = { name: '', location: '', capacity: 30, description: '', status: 'active' as LabStatus }
 
 export default function Labs() {
   const { isAdmin } = useAuth()
-  const [labs, setLabs] = useState<Lab[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
   const [showModal, setShowModal] = useState(false)
@@ -19,14 +19,8 @@ export default function Labs() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
 
-  const fetchLabs = () => {
-    setLoading(true)
-    labService.getAll()
-      .then((d) => setLabs(d.labs))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { fetchLabs() }, [])
+  const { data, loading, error, refetch } = useAsync(() => labService.getAll().then((d) => d.labs))
+  const labs: Lab[] = data ?? []
 
   const filtered = labs.filter((l) =>
     l.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -50,7 +44,7 @@ export default function Labs() {
     try {
       await labService.delete(lab.id)
       toast.success('Laboratório excluído')
-      fetchLabs()
+      refetch()
     } catch { /* handled by interceptor */ }
   }
 
@@ -67,7 +61,7 @@ export default function Labs() {
         toast.success('Laboratório criado!')
       }
       setShowModal(false)
-      fetchLabs()
+      refetch()
     } finally { setSaving(false) }
   }
 
@@ -96,8 +90,8 @@ export default function Labs() {
         />
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>
+      {loading || error ? (
+        <PageState loading={loading} error={error}><></></PageState>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-600">
           <p className="text-sm">Nenhum laboratório encontrado</p>

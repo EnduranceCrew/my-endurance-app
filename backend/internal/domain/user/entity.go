@@ -39,7 +39,7 @@ func New(name, email, cpf, hashedPassword string, role Role) *User {
 		Role:      role,
 		Active:    true,
 		CreatedAt: time.Now().UTC(),
-		UpdatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC()
 	}
 }
 

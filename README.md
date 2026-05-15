@@ -1,89 +1,89 @@
-# Endurance — Monitoramento de Laboratórios de Informática
+# Endurance — Computer Lab Monitoring
 
-> Sistema full-stack para monitoramento de laboratórios públicos de informática.  
-> Dashboard com temas **dark** e **light**, autenticação JWT, roles de admin/usuário, validação de CPF e e-mail, notificações pop-up e arquitetura hexagonal limpa
+> Full-stack system for monitoring public computer laboratories.  
+> Dashboard with **dark** and **light** themes, JWT authentication, admin/user roles, CPF and email validation, pop-up notifications, and clean hexagonal architecture
 
 ---
 
-## 🗂️ Estrutura do Projeto
+## 🗂️ Project Structure
 
 ```
 endurance/
-├── backend/                     ← API em Go (arquitetura hexagonal)
-│   ├── cmd/api/main.go          ← Ponto de entrada + injeção de dependências
-│   ├── config/                  ← Configurações e conexão com BD
+├── backend/                     ← Go API (hexagonal architecture)
+│   ├── cmd/api/main.go          ← Entry point + dependency injection
+│   ├── config/                  ← Configuration and DB connection
 │   ├── internal/
-│   │   ├── domain/              ← ① DOMÍNIO: entidades puras + interfaces de repositório
+│   │   ├── domain/              ← ① DOMAIN: pure entities + repository interfaces
 │   │   │   ├── user/
 │   │   │   ├── lab/
 │   │   │   ├── computer/
 │   │   │   └── alert/
-│   │   ├── application/         ← ② APLICAÇÃO: casos de uso (regras de negócio)
+│   │   ├── application/         ← ② APPLICATION: use cases (business rules)
 │   │   │   ├── auth/
 │   │   │   ├── user/
 │   │   │   ├── lab/
 │   │   │   ├── computer/
 │   │   │   ├── alert/
 │   │   │   └── dashboard/
-│   │   └── infrastructure/      ← ③ INFRAESTRUTURA: adaptadores concretos
-│   │       ├── persistence/     ← Repositórios GORM (PostgreSQL)
+│   │   └── infrastructure/      ← ③ INFRASTRUCTURE: concrete adapters
+│   │       ├── persistence/     ← GORM repositories (PostgreSQL)
 │   │       ├── security/        ← JWT + bcrypt
-│   │       └── http/            ← Handlers Gin + middleware + roteador
-│   └── pkg/                     ← Utilitários compartilhados (sem lógica de negócio)
-│       ├── apperrors/           ← Erros tipados com código HTTP
-│       ├── response/            ← Envelope JSON padrão
-│       └── validator/           ← Validação de CPF (algoritmo oficial) e e-mail
-└── frontend/                    ← SPA em TypeScript + React + Tailwind
+│   │       └── http/            ← Gin handlers + middleware + router
+│   └── pkg/                     ← Shared utilities (no business logic)
+│       ├── apperrors/           ← Typed errors with HTTP codes
+│       ├── response/            ← Standard JSON envelope
+│       └── validator/           ← CPF validation (official algorithm) and email
+└── frontend/                    ← SPA in TypeScript + React + Tailwind
     └── src/
         ├── contexts/            ← AuthContext (JWT) + ThemeContext (dark/light)
-        ├── services/            ← Axios configurado + interceptors
+        ├── services/            ← Configured Axios + interceptors
         ├── components/          ← Layout, Sidebar, Navbar, StatsCard, LabCard…
         └── pages/               ← Login, Dashboard, Labs, LabDetail, Alerts, Users
 ```
 
 ---
 
-## 🏗️ Arquitetura Hexagonal
+## 🏗️ Hexagonal Architecture
 
 ```
 ┌─────────────────────────────────────────────┐
-│              INFRAESTRUTURA                 │
+│              INFRASTRUCTURE                 │
 │  ┌─────────────┐       ┌──────────────────┐ │
 │  │  HTTP/Gin   │       │    PostgreSQL    │ │
 │  │  (handlers) │       │   (GORM repos)   │ │
 │  └──────┬──────┘       └────────┬─────────┘ │
 │         │ primary port          │ secondary │
 │  ┌──────▼──────────────────────▼─────────┐  │
-│  │            APLICAÇÃO                  │  │
-│  │   UseCase interfaces + implementações │  │
+│  │            APPLICATION                │  │
+│  │   UseCase interfaces + implementations│  │
 │  └──────────────────┬────────────────────┘  │
 │                     │ domain ports          │
 │  ┌──────────────────▼────────────────────┐  │
-│  │              DOMÍNIO                  │  │
-│  │  Entidades puras · Interfaces (ports) │  │
-│  │  Sem dependência de framework         │  │
+│  │               DOMAIN                  │  │
+│  │  Pure entities · Interfaces (ports)   │  │
+│  │  No framework dependency              │  │
 │  └───────────────────────────────────────┘  │
 └─────────────────────────────────────────────┘
 ```
 
-**Por que hexagonal?**
-- O domínio é testável isoladamente (sem BD, sem HTTP)
-- Trocar PostgreSQL por outro banco = só reimplementar os repositórios
-- Trocar Gin por outro framework = só reimplementar os handlers
-- Use cases são o centro: recebem e retornam DTOs, nunca objetos de framework
+**Why hexagonal?**
+- The domain is testable in isolation (no DB, no HTTP)
+- Swapping PostgreSQL for another database = just reimplement the repositories
+- Swapping Gin for another framework = just reimplement the handlers
+- Use cases are the core: they receive and return DTOs, never framework objects
 
 ---
 
-## ⚙️ Pré-requisitos
+## ⚙️ Prerequisites
 
-| Ferramenta | Versão mínima | Para quê |
-|------------|---------------|----------|
-| Go         | 1.21          | Backend  |
-| Node.js    | 18 LTS        | Frontend |
-| PostgreSQL | 14            | Banco de dados |
-| Git        | qualquer      | Clonar/versionar |
+| Tool       | Minimum Version | Purpose        |
+|------------|-----------------|----------------|
+| Go         | 1.21            | Backend        |
+| Node.js    | 18 LTS          | Frontend       |
+| PostgreSQL | 14              | Database       |
+| Git        | any             | Clone/version  |
 
-### Instalação rápida (Ubuntu/Debian)
+### Quick Installation (Ubuntu/Debian)
 
 ```bash
 # Go
@@ -91,7 +91,7 @@ wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc && source ~/.bashrc
 
-# Node.js via nvm (recomendado)
+# Node.js via nvm (recommended)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 source ~/.bashrc
 nvm install 20 && nvm use 20
@@ -103,198 +103,198 @@ sudo systemctl start postgresql
 
 ---
 
-## Como Rodar do Zero o Projeto
+## How to Run the Project from Scratch
 
-### 1 · Banco de dados
+### 1 · Database
 
 ```bash
-# Entrar no PostgreSQL como superusuário
+# Enter PostgreSQL as superuser
 sudo -u postgres psql
 
-# Dentro do psql — criar banco e usuário:
+# Inside psql — create database and user:
 CREATE DATABASE endurance;
-CREATE USER endurance_user WITH PASSWORD 'senha_segura';
+CREATE USER endurance_user WITH PASSWORD 'secure_password';
 GRANT ALL PRIVILEGES ON DATABASE endurance TO endurance_user;
 \q
 ```
 
-### 2 · Configurar o ambiente do backend
+### 2 · Configure the backend environment
 
 ```bash
 cd endurance/backend
 
-# Copiar o arquivo de exemplo de variáveis de ambiente
+# Copy the environment variables example file
 cp .env.example .env
 ```
 
-Abra `.env` e edite as variáveis:
+Open `.env` and edit the variables:
 
 ```env
 PORT=8080
 DB_HOST=localhost
 DB_PORT=5432
-DB_USER=endurance_user        # usuário criado acima
-DB_PASSWORD=senha_segura      # senha criada acima
+DB_USER=endurance_user        # user created above
+DB_PASSWORD=secure_password   # password created above
 DB_NAME=endurance
-JWT_SECRET=mude_para_algo_aleatorio_e_longo_aqui
+JWT_SECRET=change_to_something_random_and_long_here
 JWT_EXPIRATION_HOURS=24
 CORS_ORIGINS=http://localhost:5173
 ```
 
-> ⚠️ **Nunca commit o `.env`** — ele contém segredos. O `.env.example` é o que vai no Git.
+> ⚠️ **Never commit `.env`** — it contains secrets. The `.env.example` is what goes into Git.
 
-### 3 · Instalar dependências do backend
+### 3 · Install backend dependencies
 
 ```bash
 cd endurance/backend
 
-# Baixa todos os módulos Go declarados em go.mod
+# Downloads all Go modules declared in go.mod
 go mod tidy
 
-# Por que rodar isso?
-# O go.mod lista as dependências mas não as baixa automaticamente.
-# `go mod tidy` baixa tudo e gera o go.sum (lock file).
+# Why run this?
+# go.mod lists dependencies but doesn't download them automatically.
+# `go mod tidy` downloads everything and generates go.sum (lock file).
 ```
 
-### 4 · Rodar o backend
+### 4 · Run the backend
 
 ```bash
 cd endurance/backend
 
-# Compila e executa o servidor
+# Compiles and starts the server
 go run ./cmd/api/main.go
 
-# Você deve ver:
-# [db] conectado com sucesso!
-# [migrate] tabelas sincronizadas
-# 🔑 Admin padrão criado: admin@endurance.dev / Admin@12345
-# 🚀 Endurance rodando em http://localhost:8080
+# You should see:
+# [db] connected successfully!
+# [migrate] tables synchronized
+# 🔑 Default admin created: admin@endurance.dev / Admin@12345
+# 🚀 Endurance running at http://localhost:8080
 ```
 
-> O servidor cria as tabelas automaticamente via AutoMigrate do GORM.  
-> Na primeira execução, cria o usuário admin padrão. **Troque a senha após o primeiro login!**
+> The server creates tables automatically via GORM's AutoMigrate.  
+> On first run, it creates the default admin user. **Change the password after your first login!**
 
-### 5 · Instalar dependências do frontend
+### 5 · Install frontend dependencies
 
 ```bash
 cd endurance/frontend
 
-# Instala todas as dependências listadas em package.json
+# Installs all dependencies listed in package.json
 npm install
 
-# Por que npm install aqui?
-# O package.json declara as dependências (React, Tailwind, Axios…)
-# mas node_modules/ não existe ainda. `npm install` cria essa pasta.
+# Why npm install here?
+# package.json declares the dependencies (React, Tailwind, Axios…)
+# but node_modules/ doesn't exist yet. `npm install` creates that folder.
 ```
 
-### 6 · Rodar o frontend
+### 6 · Run the frontend
 
 ```bash
 cd endurance/frontend
 
-# Inicia o servidor de desenvolvimento Vite
+# Starts the Vite development server
 npm run dev
 
-# Vite abre em http://localhost:5173
-# Proxy configurado: /api → http://localhost:8080 (sem CORS manual)
+# Vite opens at http://localhost:5173
+# Proxy configured: /api → http://localhost:8080 (no manual CORS needed)
 ```
 
-### 7 · Acessar a aplicação
+### 7 · Access the application
 
-1. Abra **http://localhost:5173**
-2. Login com as credenciais do admin padrão:
-   - E-mail: `admin@endurance.dev`
-   - Senha:  `Admin@12345`
-3. **Troque a senha** em **Meu Perfil → Alterar senha**
-
----
-
-## 🔑 Credenciais e Roles
-
-| Role  | Permissões |
-|-------|-----------|
-| **admin** | Tudo: CRUD de labs, computadores, usuários, alertas, dashboard |
-| **user**  | Visualizar labs, computadores, alertas; alterar própria senha |
+1. Open **http://localhost:5173**
+2. Log in with the default admin credentials:
+   - Email: `admin@endurance.dev`
+   - Password: `Admin@12345`
+3. **Change the password** under **My Profile → Change Password**
 
 ---
 
-## 📡 Endpoints da API
+## 🔑 Credentials and Roles
 
-### Auth (público)
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| POST | `/api/v1/auth/login` | Login → retorna JWT |
-| POST | `/api/v1/auth/register` | Cadastro → retorna JWT |
+| Role      | Permissions |
+|-----------|-------------|
+| **admin** | Everything: CRUD for labs, computers, users, alerts, dashboard |
+| **user**  | View labs, computers, alerts; change own password |
 
-### Dashboard (autenticado)
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/v1/dashboard/stats` | Estatísticas gerais |
+---
 
-### Laboratórios
-| Método | Rota | Role |
-|--------|------|------|
-| GET    | `/api/v1/labs` | todos |
-| GET    | `/api/v1/labs/:id` | todos |
+## 📡 API Endpoints
+
+### Auth (public)
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/api/v1/auth/login` | Login → returns JWT |
+| POST | `/api/v1/auth/register` | Registration → returns JWT |
+
+### Dashboard (authenticated)
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/v1/dashboard/stats` | General statistics |
+
+### Laboratories
+| Method | Route | Role |
+|--------|-------|------|
+| GET    | `/api/v1/labs` | all |
+| GET    | `/api/v1/labs/:id` | all |
 | POST   | `/api/v1/labs` | admin |
 | PUT    | `/api/v1/labs/:id` | admin |
 | DELETE | `/api/v1/labs/:id` | admin |
-| GET    | `/api/v1/labs/:labId/computers` | todos |
-| GET    | `/api/v1/labs/:labId/alerts` | todos |
+| GET    | `/api/v1/labs/:labId/computers` | all |
+| GET    | `/api/v1/labs/:labId/alerts` | all |
 
-### Computadores
-| Método | Rota | Role |
-|--------|------|------|
-| GET    | `/api/v1/computers` | todos |
+### Computers
+| Method | Route | Role |
+|--------|-------|------|
+| GET    | `/api/v1/computers` | all |
 | POST   | `/api/v1/computers` | admin |
 | PUT    | `/api/v1/computers/:id` | admin |
-| PATCH  | `/api/v1/computers/:id/status` | todos |
+| PATCH  | `/api/v1/computers/:id/status` | all |
 | DELETE | `/api/v1/computers/:id` | admin |
 
-### Alertas
-| Método | Rota | Role |
-|--------|------|------|
-| GET    | `/api/v1/alerts?open=true` | todos |
-| POST   | `/api/v1/alerts` | todos |
+### Alerts
+| Method | Route | Role |
+|--------|-------|------|
+| GET    | `/api/v1/alerts?open=true` | all |
+| POST   | `/api/v1/alerts` | all |
 | PATCH  | `/api/v1/alerts/:id/resolve` | admin |
 | DELETE | `/api/v1/alerts/:id` | admin |
 
-### Usuários
-| Método | Rota | Role |
-|--------|------|------|
+### Users
+| Method | Route | Role |
+|--------|-------|------|
 | GET    | `/api/v1/users` | admin |
 | PUT    | `/api/v1/users/:id` | admin |
 | DELETE | `/api/v1/users/:id` | admin |
-| POST   | `/api/v1/users/me/password` | autenticado |
+| POST   | `/api/v1/users/me/password` | authenticated |
 
 ---
 
-## 🛠️ Comandos Úteis
+## 🛠️ Useful Commands
 
 ### Backend
 
 ```bash
-# Build para produção (gera binário)
+# Production build (generates binary)
 go build -o endurance ./cmd/api/main.go
 
-# Executar o binário
+# Run the binary
 ./endurance
 
-# Rodar testes
+# Run tests
 go test ./...
 
-# Verificar problemas de código
+# Check for code issues
 go vet ./...
 ```
 
 ### Frontend
 
 ```bash
-# Build para produção
+# Production build
 npm run build
-# Gera a pasta dist/ com os arquivos estáticos
+# Generates the dist/ folder with static files
 
-# Preview do build de produção
+# Preview the production build
 npm run preview
 
 # Lint
@@ -303,7 +303,7 @@ npm run lint
 
 ---
 
-## 🐳 Docker (opcional)
+## 🐳 Docker (optional)
 
 ```bash
 # Backend
@@ -334,7 +334,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
 EOF
 
-# docker-compose.yml na raiz
+# docker-compose.yml at root
 cat > docker-compose.yml << 'EOF'
 version: '3.9'
 services:
@@ -343,7 +343,7 @@ services:
     environment:
       POSTGRES_DB: endurance
       POSTGRES_USER: endurance_user
-      POSTGRES_PASSWORD: senha_segura
+      POSTGRES_PASSWORD: secure_password
     ports: ["5432:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
 
@@ -362,60 +362,60 @@ volumes:
   pgdata:
 EOF
 
-# Subir tudo
+# Start everything
 docker-compose up --build
 ```
 
 ---
 
-## 🎨 Temas
+## 🎨 Themes
 
-O sistema suporta **dark** e **light** com um clique no ícone ☀️/🌙 no navbar.  
-A preferência é salva no `localStorage` e respeita `prefers-color-scheme` do sistema.
+The system supports **dark** and **light** with a single click on the ☀️/🌙 icon in the navbar.  
+The preference is saved in `localStorage` and respects the system's `prefers-color-scheme`.
 
-- **Dark**: fundo `#0a0a0f`, cards `#16161f`, bordas `#1e1e2a`
-- **Light**: branco brilhante, bordas `gray-100`, sombras sutis
-- **Detalhes**: azul `brand-500` (`#0ea5e9`) em ambos os temas
-
----
-
-## ✅ Validações implementadas
-
-| Campo | Validação |
-|-------|-----------|
-| CPF   | Algoritmo dos 2 dígitos verificadores (frontend + backend) |
-| E-mail | Regex RFC 5322 simplificado (frontend + backend) |
-| Senha | Mínimo 8 caracteres + indicador de força visual no cadastro |
-| Pop-ups | `react-hot-toast` — sucesso, erro, aviso, info com ícones |
+- **Dark**: background `#0a0a0f`, cards `#16161f`, borders `#1e1e2a`
+- **Light**: bright white, `gray-100` borders, subtle shadows
+- **Accent**: blue `brand-500` (`#0ea5e9`) in both themes
 
 ---
 
-## 📦 Stack completa
+## ✅ Implemented Validations
 
-| Camada | Tecnologia |
-|--------|-----------|
+| Field    | Validation |
+|----------|------------|
+| CPF      | Official 2-digit verifier algorithm (frontend + backend) |
+| Email    | Simplified RFC 5322 regex (frontend + backend) |
+| Password | Minimum 8 characters + visual strength indicator on registration |
+| Pop-ups  | `react-hot-toast` — success, error, warning, info with icons |
+
+---
+
+## 📦 Full Stack
+
+| Layer        | Technology |
+|--------------|-----------|
 | Backend HTTP | Go + Gin |
-| ORM | GORM v2 |
-| Banco de dados | PostgreSQL |
-| Autenticação | JWT (golang-jwt/jwt v5) |
-| Hash de senhas | bcrypt (golang.org/x/crypto) |
-| Frontend | React 18 + TypeScript + Vite |
-| Estilização | Tailwind CSS v3 |
-| HTTP client | Axios |
-| Roteamento | React Router v6 |
-| Notificações | react-hot-toast |
-| Ícones | Lucide React |
-| Gráficos | Recharts |
+| ORM          | GORM v2 |
+| Database     | PostgreSQL |
+| Auth         | JWT (golang-jwt/jwt v5) |
+| Password hash | bcrypt (golang.org/x/crypto) |
+| Frontend     | React 18 + TypeScript + Vite |
+| Styling      | Tailwind CSS v3 |
+| HTTP client  | Axios |
+| Routing      | React Router v6 |
+| Notifications | react-hot-toast |
+| Icons        | Lucide React |
+| Charts       | Recharts |
 
 ---
 
-## 🔒 Segurança
+## 🔒 Security
 
-- Senhas hasheadas com **bcrypt** (custo padrão = 12 rounds)
-- JWT com expiração configurável (padrão 24h)
-- Middleware de role-based access control (RBAC)
-- CORS restrito às origens configuradas em `.env`
-- Soft-delete em todas as entidades (dados nunca apagados fisicamente)
-- Respostas de erro não expõem detalhes internos em produção (`GIN_MODE=release`)
+- Passwords hashed with **bcrypt** (default cost = 12 rounds)
+- JWT with configurable expiration (default 24h)
+- Role-based access control (RBAC) middleware
+- CORS restricted to origins configured in `.env`
+- Soft-delete on all entities (data is never physically deleted)
+- Error responses do not expose internal details in production (`GIN_MODE=release`)
 
 ---

@@ -419,3 +419,35 @@ The preference is saved in `localStorage` and respects the system's `prefers-col
 - Error responses do not expose internal details in production (`GIN_MODE=release`)
 
 ---
+
+## © Copyright
+
+```
+Copyright (c) 2025 Arthur Fialho. All rights reserved.
+```
+
+**Endurance — Computer Lab Monitoring System**  
+Created and developed by **Arthur Fialho**.
+
+This software and all associated source code, documentation, design assets, and related files are the exclusive intellectual property of Arthur Fialho, protected under applicable copyright laws and international treaties.
+
+### Permissions & Restrictions
+
+| Action | Status |
+|--------|--------|
+| Personal and educational use | ✅ Permitted |
+| Modification for personal use | ✅ Permitted |
+| Distribution of original or modified copies | ❌ Not permitted without written authorization |
+| Commercial use | ❌ Not permitted without written authorization |
+| Sublicensing | ❌ Not permitted |
+| Removal or alteration of this copyright notice | ❌ Not permitted |
+
+### Terms
+
+Redistribution, reproduction, or use of this project — in whole or in part, in any form or by any means, electronic or mechanical — is strictly prohibited without the prior written permission of the copyright holder.
+
+Any unauthorized use, copying, modification, merger, publication, distribution, sublicensing, or sale of copies of this software may constitute copyright infringement and may be subject to civil and/or criminal penalties under applicable law.
+
+---
+
+*© 2026 Arthur Fialho. All rights reserved. Unauthorized use is strictly prohibited.*
